@@ -1,0 +1,22 @@
+# Each user's own prep data: plan, error log, scores, vocab, filled-in dashboard
+workspace/
+
+# College Board content fetched by the bank scripts (copyrighted, fetch locally)
+bank/cache/
+*.parsed.json
+
+# Generated question papers and answer keys
+sets/
+*.pdf
+
+# Claude Code local settings
+.claude/settings.local.json
+.impeccable/
+
+# OS / editor / Python
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.vscode/
+.idea/
