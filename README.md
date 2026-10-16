@@ -6,6 +6,8 @@ The prompt turns an AI coding agent such as [Claude Code](https://claude.com/cla
 
 > **Status: work in progress.** The prompt is being pulled out of a real month of SAT prep and cleaned up for general use.
 
+**See it first:** download [`dashboard.html`](dashboard.html) and open it in your browser. It's a sample dashboard filled with a made-up student's data, so you can see what you'll get before you start.
+
 ## How to use it
 
 You don't need to clone this repo. Everything is in one file.
@@ -35,14 +37,78 @@ The agent will ask for:
 
 If you skip it, the agent works from the scores you type in, and the plan becomes more accurate as you log practice.
 
+## What the prompt creates
+
+Once you've answered the questions, the agent sets up your folder like this:
+
+```
+your-sat-folder/
+├── 00-README.md          # index of the folder, and the agent's notes on where you stand
+├── 01-plan.md            # your day-by-day schedule through test day
+├── 02-error-log.md       # every question you miss, with why you missed it
+├── 03-grammar-rules.md   # the Standard English Conventions rules, in your own words
+├── 04-score-tracker.md   # every full practice test and its domain bands
+├── 05-vocabulary.md      # words in context you didn't know
+├── 06-test-day.md        # timing strategy and a logistics checklist
+├── 07-desmos.md          # when and how to use the built-in graphing calculator
+├── dashboard.html        # your dashboard: calendar, misses, topics, vocab, projected score
+├── bank/                 # College Board questions, downloaded once and cached here
+└── sets/                 # your practice sets, one PDF per set with an answer key
+```
+
+**`sets/` starts empty.** No practice sets are made up front. The agent builds each set when you ask for it, so every set is based on what your error log says at that point rather than on a guess from day one.
+
+## Using it day to day
+
+You run everything by talking to your coding agent in your study folder. You never need to edit a file yourself.
+
+### Creating a set
+
+Ask for the set on the day you'll do it (or the night before):
+
+> *"Make today's set."*
+> *"Build the set for Tuesday."*
+> *"Make me 20 timed SEC questions, mostly Hard."*
+
+The agent checks your plan and error log, pulls matching questions from the College Board question bank, and saves a printable PDF and answer key to `sets/`.
+
+### Uploading your results
+
+When you finish a set or a practice test, give the results straight to the agent. You don't need to fill in any file or form:
+
+> *"Set F answers: 1 B, 2 C, 3 A, …"*
+> *"Here's my practice test score report."* (attach the screenshot or PDF)
+> *"Practice test 2: RW 660, Math 670."*
+
+The agent grades the set against its key and logs every miss in the error log. It asks you **why** you missed each one (`content`, `misread`, `careless` or `timing`), with a suggested answer for each. Then it updates the dashboard.
+
+### Marking a day complete
+
+> *"Mark today done."*
+> *"Mark Saturday done."*
+
+The day gets a check mark on the dashboard calendar, along with its score if it had a set.
+
+### Anything else
+
+> *"Add vocab: tenuous — weak, barely holding together."*
+> *"What should I focus on this week?"*
+> *"I can't study Thursday. Move it."*
+
+## All questions come from the College Board
+
+**Every question in every set comes from the official [SAT Suite Question Bank](https://satsuitequestionbank.collegeboard.org/).** The prompt doesn't allow the agent to write its own questions, passages or answer choices. AI-written questions can have wrong answer keys or test things the real SAT doesn't, and practicing on them can teach you the wrong habits.
+
+The agent's job is to *choose* questions: by domain, skill and difficulty, and by what your error log says you need. When it explains a miss, it uses College Board's own rationale for that question.
+
 ## How it works
 
 Each file in your study folder has one job, and the agent follows a fixed set of rules for each one:
 
-- **The error log is the source of truth.** Every missed question is logged with its domain, the rule it broke, the letter you picked, the correct letter, and why you missed it (`content`, `misread`, `careless` or `timing`). Before helping you, the agent reads the log, because it shows what you actually get wrong rather than what you think you get wrong.
+- **The error log is the source of truth.** Every missed question is logged with its domain, the rule it broke, the letter you picked, the correct letter, and why you missed it. Before helping you, the agent reads the log, because it shows what you actually get wrong rather than what you think you get wrong.
 - **The dashboard shows the data and never holds it.** All of your data goes in one `DATA` block at the top of `dashboard.html`. The agent edits that block and never touches the render code.
-- **Sets are built from what you miss.** The agent pulls questions by domain, skill and difficulty, so a set can re-test a weak rule on fresh questions instead of repeating ones you've already seen.
-- **The projected score is honest about its uncertainty.** The dashboard shows a projected total with a 95% interval. The projection is anchored on your last full practice test and moves only on evidence logged after it.
+- **Sets are built from what you miss.** A set can re-test a weak rule on fresh questions instead of repeating ones you've already seen.
+- **The projected score is honest about its uncertainty.** The dashboard shows a projected total with a 95% interval. The projection is anchored on your last full practice test and moves only on evidence logged after it. [`docs/projection.md`](docs/projection.md) explains every number.
 
 ## Rules the agent follows
 
@@ -51,9 +117,10 @@ Each of these was learned the hard way:
 1. **Read the error log before giving advice.**
 2. **Edit `DATA`, never the render code.**
 3. **Every miss gets a `why` tag.** A pile of untagged misses can't tell you whether your gap is content or execution.
-4. **Don't pool a single domain into the projection until it has about 20 questions in one sitting.** With fewer questions, one miss looks like a 70-point drop.
-5. **Confidence is not a progress metric between full tests.** Logging practice widens the interval, and only a full test narrows it again. That is intended behavior, not a bug.
-6. **Never refetch the question bank.** Fetch it once and cache it locally.
+4. **Never write its own questions.** Every question comes from the College Board question bank.
+5. **Don't pool a single domain into the projection until it has about 20 questions in one sitting.** With fewer questions, one miss looks like a 70-point drop.
+6. **Confidence is not a progress metric between full tests.** Logging practice widens the interval, and only a full test narrows it again. That is intended behavior, not a bug.
+7. **Never refetch the question bank.** Fetch it once and cache it locally.
 
 ## Your data stays on your computer
 
@@ -61,10 +128,10 @@ Your plan, error log, scores, vocabulary and practice sets are all created in yo
 
 ## Question content
 
-This repo contains **no College Board questions**. The agent fetches questions from the public [SAT Suite Question Bank](https://satsuitequestionbank.collegeboard.org/) onto your own machine, for your own study. Don't share or republish the fetched content.
+This repo contains **no College Board questions**. The agent downloads them from the public question bank onto your own machine, for your own study. Don't share or republish them.
 
 SAT is a trademark of the College Board, which is not affiliated with this project and does not endorse it.
 
 ## License
 
-TBD.
+[MIT](LICENSE)
