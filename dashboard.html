@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAT Command Center</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f7f6f3; --surface:#ffffff; --surface2:#f1efea; --line:#e2ded6; --line2:#cfc9be;
+  --text:#1b1a17; --dim:#6b675e; --faint:#9a958a;
+  --accent:#4f46c9; --accent-soft:#ecebfa;
+  --test:#c4344f; --test-soft:#fbe9ec;
+  --ok:#2c8a5f; --ok-soft:#e6f4ec;
+  --warn:#c07a12; --warn-soft:#fbf0dd;
+  --bad:#c4344f;
+  --c-content:#3b6fd4; --c-misread:#7a4fc9; --c-careless:#d1742a; --c-timing:#1f8f8a;
+  --rail:#e7e3db;
+  --shadow:0 1px 2px rgba(20,18,14,.05), 0 4px 14px -6px rgba(20,18,14,.10);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111114; --surface:#191a1f; --surface2:#202127; --line:#2b2d34; --line2:#3a3d46;
+    --text:#eceae5; --dim:#9d9a93; --faint:#6e6b66;
+    --accent:#8b86f0; --accent-soft:#23224a;
+    --test:#f0768d; --test-soft:#3a1d25;
+    --ok:#5fc294; --ok-soft:#16301f;
+    --warn:#e2a244; --warn-soft:#332512;
+    --bad:#f0768d;
+    --c-content:#6b9bf0; --c-misread:#a888f5; --c-careless:#e59b56; --c-timing:#4fc2bb;
+    --rail:#2b2d34;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 14px -6px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111114; --surface:#191a1f; --surface2:#202127; --line:#2b2d34; --line2:#3a3d46;
+  --text:#eceae5; --dim:#9d9a93; --faint:#6e6b66;
+  --accent:#8b86f0; --accent-soft:#23224a;
+  --test:#f0768d; --test-soft:#3a1d25;
+  --ok:#5fc294; --ok-soft:#16301f;
+  --warn:#e2a244; --warn-soft:#332512;
+  --bad:#f0768d;
+  --c-content:#6b9bf0; --c-misread:#a888f5; --c-careless:#e59b56; --c-timing:#4fc2bb;
+  --rail:#2b2d34;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 14px -6px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
+.wrap{max-width:1120px; margin:0 auto; padding:0 22px 90px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(12px); border-bottom:1px solid var(--line);
+}
+.hbar{max-width:1120px; margin:0 auto; padding:14px 22px 0; display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap}
+.brand{display:flex; align-items:baseline; gap:10px; margin-right:auto}
+.brand h1{font-size:16px; font-weight:650; letter-spacing:-.01em; margin:0}
+.brand span{font-size:11.5px; color:var(--faint); letter-spacing:.06em; text-transform:uppercase}
+.cd{display:flex; align-items:baseline; gap:7px}
+.cd b{font-size:30px; font-weight:660; letter-spacing:-.03em; line-height:1}
+.cd i{font-style:normal; font-size:11.5px; color:var(--dim); letter-spacing:.04em; text-transform:uppercase; max-width:74px; line-height:1.25}
+.cd.proj{position:relative; align-items:flex-end; gap:9px}
+.cd.proj b{color:var(--warn)}
+.confbox{display:flex; flex-direction:column; gap:4px; padding-bottom:2px; min-width:66px}
+.confbar{display:block; height:4px; border-radius:3px; background:var(--rail); overflow:hidden}
+.confbar span{display:block; height:100%; border-radius:3px; background:var(--warn); transition:width .35s ease}
+.confbox em{font-style:normal; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); white-space:nowrap}
+.themebtn{
+  background:none; border:1px solid var(--line); color:var(--dim); cursor:pointer;
+  border-radius:7px; width:30px; height:30px; font-size:14px; line-height:1; align-self:center;
+}
+.themebtn:hover{border-color:var(--line2); color:var(--text)}
+nav{max-width:1120px; margin:0 auto; padding:10px 22px 0; display:flex; gap:2px; overflow-x:auto}
+nav button{
+  background:none; border:0; border-bottom:2px solid transparent; color:var(--dim);
+  font:inherit; font-size:13.5px; font-weight:500; padding:8px 13px 9px; cursor:pointer; white-space:nowrap;
+}
+nav button:hover{color:var(--text)}
+nav button[aria-selected="true"]{color:var(--text); font-weight:600; border-bottom-color:var(--accent)}
+nav button .pill{
+  display:inline-block; margin-left:6px; background:var(--surface2); color:var(--dim);
+  border-radius:20px; padding:1px 6px; font-size:10.5px; font-weight:600; vertical-align:1px;
+}
+nav button[aria-selected="true"] .pill{background:var(--accent-soft); color:var(--accent)}
+
+/* ---------- primitives ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow)}
+.lab{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:640}
+h2.sec{
+  font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); font-weight:640;
+  margin:34px 0 12px; display:flex; align-items:center; gap:12px;
+}
+h2.sec::after{content:""; flex:1; height:1px; background:var(--line)}
+.muted{color:var(--dim)}
+.tiny{font-size:12px}
+.grid{display:grid; gap:14px}
+.hint{
+  font-size:12.5px; color:var(--dim); background:var(--surface2); border:1px dashed var(--line2);
+  border-radius:9px; padding:11px 13px; line-height:1.55;
+}
+.hint code{
+  font:12px ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--surface);
+  border:1px solid var(--line); border-radius:5px; padding:1.5px 5px; color:var(--text);
+}
+.empty{text-align:center; padding:46px 22px; color:var(--dim)}
+.empty .big{font-size:15px; color:var(--text); font-weight:560; margin-bottom:6px}
+[hidden]{display:none !important}
+
+/* ---------- status strip ---------- */
+.strip{display:grid; grid-template-columns:1.15fr 1fr; gap:14px; margin:22px 0 0}
+@media(max-width:820px){.strip{grid-template-columns:1fr}}
+.today{padding:16px 18px; display:flex; flex-direction:column; gap:9px}
+.today .top{display:flex; align-items:center; gap:9px}
+.today .date{font-size:12.5px; font-weight:600}
+.today .tag{font-size:10.5px; font-weight:650; letter-spacing:.05em; text-transform:uppercase; padding:2.5px 7px; border-radius:5px}
+.today .task{font-size:15.5px; line-height:1.45; font-weight:500}
+.today .meta{display:flex; gap:16px; align-items:center; font-size:12px; color:var(--dim); margin-top:auto; padding-top:4px}
+
+.gap{padding:16px 18px}
+.gap .head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px}
+.gap .head b{font-size:22px; font-weight:660; letter-spacing:-.02em}
+.rail{height:9px; background:var(--rail); border-radius:5px; overflow:hidden; display:flex}
+.rail>span{display:block; height:100%}
+.legend{display:flex; gap:15px; margin-top:11px; flex-wrap:wrap; font-size:12px; color:var(--dim)}
+.legend i{width:8px; height:8px; border-radius:2.5px; display:inline-block; margin-right:6px; vertical-align:0}
+.legend b{color:var(--text); font-weight:600}
+
+/* ---------- calendar ---------- */
+.calhead{display:grid; grid-template-columns:118px repeat(7,1fr); gap:7px; margin-bottom:7px; padding:0 2px}
+.calhead div{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:640; text-align:center}
+.calhead div:first-child{text-align:left}
+.week{display:grid; grid-template-columns:118px repeat(7,1fr); gap:7px; margin-bottom:7px}
+.wlabel{padding:9px 2px 0; min-width:0}
+.wlabel b{display:block; font-size:12.5px; font-weight:640; letter-spacing:-.01em}
+.wlabel span{display:block; font-size:11px; color:var(--faint); line-height:1.35; margin-top:2px}
+.day{
+  position:relative; text-align:left; background:var(--surface); border:1px solid var(--line);
+  border-left:3px solid var(--line2); border-radius:9px; padding:8px 9px 9px; cursor:pointer;
+  min-height:88px; display:flex; flex-direction:column; gap:4px; font:inherit; color:inherit;
+  transition:border-color .12s, transform .12s, box-shadow .12s;
+}
+.day:hover{border-color:var(--line2); transform:translateY(-1px); box-shadow:var(--shadow)}
+.day .dnum{display:flex; align-items:baseline; justify-content:space-between; gap:4px}
+.day .dnum b{font-size:13.5px; font-weight:640; letter-spacing:-.01em}
+.day .dnum em{font-style:normal; font-size:10px; color:var(--faint); font-weight:600}
+.day p{margin:0; font-size:11.5px; line-height:1.4; color:var(--dim); overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical}
+.day .mins{margin-top:auto; font-size:10.5px; font-weight:600; color:var(--faint)}
+.day.sel{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+.day.today{border-color:var(--accent)}
+.day.today::after{
+  content:"TODAY"; position:absolute; top:-8px; right:7px; background:var(--accent); color:#fff;
+  font-size:9px; font-weight:700; letter-spacing:.07em; padding:2px 5px; border-radius:4px;
+}
+.day.done{background:var(--ok-soft); border-left-color:var(--ok)}
+.day.done .dnum b::after{content:" ✓"; color:var(--ok); font-size:12px}
+.day.past:not(.done){opacity:.5}
+.day.t-test{border-left-color:var(--test); background:var(--test-soft)}
+.day.t-review{border-left-color:var(--accent)}
+.day.t-drill{border-left-color:var(--line2)}
+.day.t-rest{border-left-color:var(--line); background:var(--surface2)}
+.day.done.t-test,.day.done.t-rest{background:var(--ok-soft)}
+.day .flag{
+  font-size:9.5px; font-weight:680; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--warn); background:var(--warn-soft); border-radius:4px; padding:1.5px 5px; align-self:flex-start;
+}
+.testday{
+  margin-top:14px; border:1px solid var(--test); border-radius:11px; background:var(--test-soft);
+  padding:15px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.testday b{font-size:15px; font-weight:660; color:var(--test)}
+.testday span{font-size:12.5px; color:var(--dim)}
+.detail{margin-top:14px; padding:16px 18px}
+.detail h3{margin:0 0 4px; font-size:15px; font-weight:620; letter-spacing:-.01em}
+.detail .sub{font-size:12px; color:var(--faint); margin-bottom:11px}
+.detail p{margin:0 0 11px; font-size:14px; line-height:1.55}
+.chips{display:flex; gap:7px; flex-wrap:wrap}
+.chip{
+  font-size:11.5px; font-weight:560; padding:3.5px 9px; border-radius:6px;
+  background:var(--surface2); color:var(--dim); border:1px solid var(--line);
+}
+
+/* ---------- stat tiles ---------- */
+.tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+@media(max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{padding:13px 15px 14px; position:relative; overflow:hidden}
+.tile::before{content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--c)}
+.tile .n{font-size:27px; font-weight:660; letter-spacing:-.03em; line-height:1.1}
+.tile .k{font-size:12px; font-weight:600; margin-top:1px}
+.tile .d{font-size:11.5px; color:var(--faint); line-height:1.4; margin-top:5px}
+.tile.alarm{border-color:var(--bad); background:var(--test-soft)}
+.tile.alarm .n,.tile.alarm .k{color:var(--bad)}
+
+/* ---------- bars ---------- */
+.bars{display:flex; flex-direction:column; gap:9px}
+.bar{display:grid; grid-template-columns:132px 1fr 46px; gap:11px; align-items:center; font-size:12.5px}
+.bar .nm{color:var(--dim); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar .tr{height:20px; background:var(--rail); border-radius:5px; overflow:hidden; display:flex}
+.bar .tr>span{height:100%; display:block; transition:width .3s}
+.bar .vl{font-weight:640; font-size:12.5px}
+@media(max-width:600px){.bar{grid-template-columns:96px 1fr 40px}}
+
+.wkbars{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:end}
+.wkcol{display:flex; flex-direction:column; align-items:center; gap:8px}
+.wkstack{width:100%; max-width:76px; display:flex; flex-direction:column-reverse; justify-content:flex-start; border-radius:5px 5px 0 0; overflow:hidden}
+.wkstack>span{width:100%; min-height:0}
+.wkbase{width:100%; height:1px; background:var(--line2)}
+.wkcol .cap{font-size:11px; color:var(--dim); text-align:center; line-height:1.35}
+.wkcol .cap b{display:block; color:var(--text); font-weight:620; font-size:12px}
+
+/* ---------- tables ---------- */
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{
+  text-align:left; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint);
+  font-weight:640; padding:0 12px 8px; border-bottom:1px solid var(--line);
+}
+td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.45}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface2)}
+.why{font-size:10.5px; font-weight:680; letter-spacing:.04em; text-transform:uppercase; padding:2.5px 7px; border-radius:5px; color:#fff; white-space:nowrap}
+.ac{font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
+.ac s{color:var(--faint); text-decoration:line-through}
+.ac b{color:var(--ok)}
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+
+/* ---------- band bars ---------- */
+.band{display:grid; grid-template-columns:190px 1fr 78px; gap:13px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line)}
+.band:last-child{border-bottom:0}
+.band .nm b{display:block; font-size:13px; font-weight:580; letter-spacing:-.005em}
+.band .nm span{font-size:11px; color:var(--faint)}
+.band .scale{position:relative; height:22px; background:var(--rail); border-radius:5px; overflow:hidden}
+.band .rng{position:absolute; top:0; bottom:0; border-radius:4px; background:var(--accent); opacity:.85}
+.band .rng.weak{background:var(--bad)}
+.band .rng.strong{background:var(--ok)}
+.band .txt{font-size:12px; font-weight:620; text-align:right}
+.band .txt em{display:block; font-style:normal; font-size:10.5px; color:var(--faint); font-weight:500}
+.axis{display:flex; justify-content:space-between; font-size:10px; color:var(--faint); padding:5px 0 0; margin-left:203px; margin-right:91px}
+@media(max-width:700px){.band{grid-template-columns:1fr; gap:5px} .axis{margin:0}}
+
+/* ---------- rules ---------- */
+.rules{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; align-items:start}
+@media(max-width:820px){.rules{grid-template-columns:1fr}}
+.rule{padding:0; overflow:hidden}
+.rule>summary{
+  list-style:none; cursor:pointer; padding:13px 15px; display:flex; align-items:baseline; gap:10px;
+}
+.rule>summary::-webkit-details-marker{display:none}
+.rule>summary:hover{background:var(--surface2)}
+.rule .n{
+  font:11.5px/1 ui-monospace,monospace; font-weight:700; color:var(--accent); background:var(--accent-soft);
+  border-radius:5px; padding:5px 6px; flex:none;
+}
+.rule .t{font-size:13.5px; font-weight:600; letter-spacing:-.005em; flex:1}
+.rule .cnt{font-size:11px; font-weight:680; color:var(--bad); background:var(--test-soft); border-radius:20px; padding:2px 8px; flex:none}
+.rule .body{padding:0 15px 14px; font-size:13px; line-height:1.6; color:var(--dim)}
+.rule .body em{color:var(--text); font-style:normal; font-weight:560}
+.rule .body .ex{
+  display:block; margin:9px 0 0; font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--surface2); border-left:2px solid var(--line2); border-radius:0 6px 6px 0; padding:8px 11px; color:var(--text);
+}
+.rule[open]>summary{border-bottom:1px solid var(--line)}
+
+/* ---------- vocab ---------- */
+.searchbar{
+  width:100%; background:var(--surface); border:1px solid var(--line); border-radius:9px;
+  padding:10px 13px; font:inherit; font-size:13.5px; color:var(--text); margin-bottom:14px;
+}
+.searchbar:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.vgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(212px,1fr)); gap:11px}
+.vc{
+  padding:13px 14px; cursor:pointer; min-height:96px; display:flex; flex-direction:column; gap:5px;
+  transition:border-color .12s, transform .12s;
+}
+.vc:hover{border-color:var(--line2); transform:translateY(-1px)}
+.vc .w{font-size:14.5px; font-weight:620; letter-spacing:-.01em}
+.vc .ev{font-size:11.5px; color:var(--faint); line-height:1.4}
+.vc .sat{font-size:12.5px; line-height:1.5; color:var(--text); margin-top:auto}
+.vc .sat .k{color:var(--accent); font-weight:640; font-size:10px; letter-spacing:.08em; text-transform:uppercase; display:block; margin-bottom:2px}
+.vc .veil{font-size:12px; color:var(--faint); margin-top:auto; font-style:italic}
+.vc.flip{border-color:var(--accent)}
+.vc .miss{position:absolute; top:10px; right:11px; font-size:10.5px; font-weight:680; color:var(--bad)}
+.vc{position:relative}
+</style>
+</head>
+<body>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   EDIT ZONE — everything below is data. Nothing else in this file needs
+   touching. Just tell your coding agent what happened; e.g.
+
+     "log a miss: colons, picked B should be C, careless, from SEC drill"
+     "mark Saturday done"
+     "practice test 2: RW 660, Math 670"
+     "add vocab: tenuous — weak, barely holding together"
+
+   Categories for `why` are exactly: content | misread | careless | timing
+
+   THIS IS SAMPLE DATA for a made-up student. Every score, miss and word is
+   invented. The dates use day(n), days from the plan's first Saturday, so
+   the demo always looks mid-plan whenever it is opened. A real study folder
+   replaces this whole block and uses plain "YYYY-MM-DD" strings instead.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const day = (()=>{
+  const t = new Date(); t.setHours(0,0,0,0);
+  const s = new Date(t); s.setDate(t.getDate() - 14);
+  s.setDate(s.getDate() - (s.getDay()+1)%7);          // back to a Saturday
+  return n => { const d = new Date(s); d.setDate(s.getDate()+n);
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+})();
+const done = n => { const t = new Date(); t.setHours(0,0,0,0); return new Date(day(n)+"T00:00") < t; };
+
+const DATA = {
+
+/* ── the fixed frame ─────────────────────────────────────────────────── */
+meta: {
+  testDate:   day(28),
+  planStart:  day(0),
+  target:     1400,
+  fallback:   1350,          // the target if the checkpoint says no-go
+  baseline:   { date:day(-21), rw:610, math:640 }
+},
+
+/* ── practice tests. Fill rw/math as they happen; null = not yet ─────── */
+scores: [
+  { date:day(-21), label:"Real SAT (baseline)", rw:610,  math:640  },
+  { date:day(1),   label:"Practice #1",         rw:640,  math:650  },
+  { date:day(8),   label:"Practice #2",         rw:660,  math:670  },
+  { date:day(21),  label:"Practice #3",         rw:null, math:null }
+],
+
+/* ── domain bands. bands[i] belongs to scores[i], null = not yet ────────
+     Each band is [low, high] on the 200-800 scale.                      */
+domains: {
+  rw: [
+    { code:"INI", name:"Information and Ideas",          weight:26, bands:[[600,660], [620,680], [650,710], null] },
+    { code:"CAS", name:"Craft and Structure",            weight:28, bands:[[560,620], [600,660], [620,680], null] },
+    { code:"EOI", name:"Expression of Ideas",            weight:20, bands:[[620,680], [640,700], [660,720], null] },
+    { code:"SEC", name:"Standard English Conventions",   weight:26, bands:[[540,600], [580,640], [630,690], null] }
+  ],
+  math: [
+    { code:"ALG", name:"Algebra",                        weight:35, bands:[[620,680], [640,700], [660,720], null] },
+    { code:"ADV", name:"Advanced Math",                  weight:35, bands:[[580,640], [610,670], [630,690], null] },
+    { code:"PSD", name:"Problem-Solving and Data",       weight:15, bands:[[640,700], [650,710], [680,740], null] },
+    { code:"GEO", name:"Geometry and Trigonometry",      weight:15, bands:[[560,620], [570,630], [600,660], null] }
+  ]
+},
+
+/* ── the calendar. type: test | review | drill | rest ────────────────── *
+ *  Weeks run Saturday to Friday. Flip `done:true` when a day is finished. */
+weeks: [
+  { n:1, title:"Foundations", note:"Learn the 8 rules, first full test",
+    days:[
+      { date:day(0),  task:"Learn all 8 grammar rules, write them out. 30 SEC questions untimed. Start the error log.", mins:180, type:"review", done:true, flag:"22/30 · SEC Set A" },
+      { date:day(1),  task:"Full-length practice test #1, Bluebook, real conditions. Score it and stop.", mins:180, type:"test", done:true, flag:"1290 · RW 640, Math 650" },
+      { date:day(2),  task:"Review test #1: every miss into the error log with a why tag.", mins:60, type:"review", done:true, flag:"8 misses logged" },
+      { date:day(3),  task:"Rules 1-4. 20 SEC questions. + 8 math, Algebra.", mins:60, type:"drill", done:true, flag:"15/20 · Set B" },
+      { date:day(4),  task:"Rules 5-8. 20 SEC questions.", mins:45, type:"drill", done:true, flag:"16/20 · Set C" },
+      { date:day(5),  task:"20 words in context. Predict the word before looking at the choices. + 8 math, Advanced Math.", mins:60, type:"drill", done:true, flag:"14/20 · Set D" },
+      { date:day(6),  task:"Redo every miss from this week, test #1 included. No new material.", mins:45, type:"review", done:true }
+    ]},
+  { n:2, title:"Reading push", note:"Second full test, timed sets start",
+    days:[
+      { date:day(7),  task:"20 inference and command of evidence, untimed. Error log review.", mins:150, type:"drill", done:true, flag:"13/20 · Set E" },
+      { date:day(8),  task:"Full-length practice test #2, Bluebook, real conditions.", mins:180, type:"test", done:true, flag:"1330 · RW 660, Math 670" },
+      { date:day(9),  task:"Review test #2, every miss tagged.", mins:60, type:"review", done:true, flag:"4 misses logged" },
+      { date:day(10), task:"Set F, timed: 20 SEC, under 40 seconds each. + 8 math, Advanced Math.", mins:60, type:"drill", done:true, flag:"16/20 · Set F" },
+      { date:day(11), task:"Set G, timed: 20 words in context.", mins:45, type:"drill", done:true, flag:"16/20 · Set G" },
+      { date:day(12), task:"Set H, timed: 20 Information and Ideas. + 8 math, Geometry and Trigonometry.", mins:60, type:"drill", done:true, flag:"17/20 · Set H" },
+      { date:day(13), task:"Set I, timed: 15 transitions and rhetorical synthesis.", mins:45, type:"drill", done:true, flag:"12/15 · Set I" }
+    ]},
+  { n:3, title:"Pressure test", note:"Full timed modules, vocab volume",
+    days:[
+      { date:day(14), task:"Error review + Set J: every miss on record that has not been redone right.", mins:150, type:"review", done:done(14) },
+      { date:day(15), task:"One timed Reading and Writing module, 27 questions in 32 minutes.", mins:120, type:"drill", done:done(15) },
+      { date:day(16), task:"20 words in context. Add unknown words to the vocab list.", mins:45, type:"drill", done:done(16) },
+      { date:day(17), task:"One timed math module, 22 questions in 35 minutes. Review anything over 90 seconds.", mins:60, type:"drill", done:done(17) },
+      { date:day(18), task:"20 Craft and Structure, mixed subtypes.", mins:45, type:"drill", done:done(18) },
+      { date:day(19), task:"Redo Tuesday's math misses cold. 15 SEC to stay warm.", mins:45, type:"drill", done:done(19) },
+      { date:day(20), task:"Topic review: every rule with 3+ misses in the error log.", mins:60, type:"review", done:done(20) }
+    ]},
+  { n:4, title:"Taper", note:"New material stops. Retrieval and rest.",
+    days:[
+      { date:day(21), task:"Full-length practice test #3, final.", mins:180, type:"test", done:done(21) },
+      { date:day(22), task:"Full review. Checkpoint decision on the 1400 target.", mins:150, type:"review", done:done(22) },
+      { date:day(23), task:"Reading review, redo only.", mins:45, type:"review", done:done(23) },
+      { date:day(24), task:"SEC review, redo only.", mins:45, type:"review", done:done(24) },
+      { date:day(25), task:"One timed math module for rhythm.", mins:45, type:"drill", done:done(25) },
+      { date:day(26), task:"Reread the 8 rules. 10 words in context. Stop at 30 min.", mins:30, type:"review", done:done(26) },
+      { date:day(27), task:"Nothing. Pack ID, admission ticket, charger. Sleep early.", mins:0, type:"rest", done:done(27) }
+    ]}
+],
+
+/* ── the gates. A checkpoint reads the test taken on it or the day before */
+checkpoints: [
+  { date:day(9),  metric:"RW on practice #2", threshold:650, extra:"" },
+  { date:day(22), metric:"RW on practice #3", threshold:680, extra:"Under 650 → drop to 1350 and consolidate" }
+],
+
+/* ══ PRACTICE SETS ══ raw accuracy from drills. NOT full tests — these feed
+     the predicted bands and the header projection. Add a line per set:
+     say `logged 17/20 SEC timed` and it lands here.                      */
+practice: [
+  { date:day(0),  domain:"SEC", label:"SEC Set A (question bank)", correct:22, total:30, timed:false },
+  { date:day(3),  domain:"SEC", label:"SEC Set B (question bank, rules 1-4)", correct:15, total:20, timed:false },
+  { date:day(4),  domain:"SEC", label:"SEC Set C (question bank, rules 5-8)", correct:16, total:20, timed:false },
+  { date:day(5),  domain:"CAS", label:"Set D — words in context (question bank)", correct:14, total:20, timed:false },
+  { date:day(7),  domain:"INI", label:"Set E — inference and command of evidence (question bank)", correct:13, total:20, timed:false },
+  { date:day(10), domain:"SEC", label:"Set F — SEC, timed (question bank)", correct:16, total:20, timed:true },
+  { date:day(11), domain:"CAS", label:"Set G — words in context, timed (question bank)", correct:16, total:20, timed:true },
+  { date:day(12), domain:"INI", label:"Set H — Information and Ideas, timed (question bank)", correct:17, total:20, timed:true },
+  // Set I (15 Expression of Ideas, 12/15) is deliberately NOT pooled: under ~20
+  // questions, one miss reads as a large score drop. Its misses live in `errors`.
+  // The 8-question math blocks are not pooled for the same reason.
+],
+
+/* ── how accuracy becomes a score ─────────────────────────────────────────
+     Two anchors, linear between them. THIS IS AN ASSUMPTION, not College
+     Board's scale — nothing public maps domain accuracy to the 200-800 band.
+     `untimed` is the points docked from untimed work. See docs/projection.md. */
+predict: {
+  anchors:    [ { acc:0.50, score:480 }, { acc:1.00, score:800 } ],
+  untimed:    40,
+  z:          1.96,      // 95% Wilson score interval
+  calibrated: false,
+
+  /* ── the header projection ───────────────────────────────────────────
+     Every number below is a 95% HALF-WIDTH in points, so they combine in
+     quadrature without unit-mixing. Change them here, not in the render.  */
+  sectionNoise: 25,      // test-to-test bounce of one section score, ±pts
+  drift:        8,       // ±pts added per week since the last measurement
+  confRef:      150      // ±confRef on the total = 0% confidence
+},
+
+/* ══ THE ERROR LOG ══ one object per missed question. This drives the
+     whole Misses tab: weekly tallies, repeat offenders, domain heat.
+     why: content | misread | careless | timing
+     Optional: qid (question bank ID), link, stem, choices, explanation —
+     a row with `explanation` gets a collapsible rationale underneath.  */
+errors: [
+  { date:day(0),  source:"SEC Set A q4",       domain:"SEC", rule:"comma splice — conjunctive adverb", picked:"B", correct:"C", why:"content",  note:"Rule 2 · joining · Medium" },
+  { date:day(0),  source:"SEC Set A q11",      domain:"SEC", rule:"colon after an incomplete clause", picked:"A", correct:"D", why:"content",  note:"Rule 4 · colons · Medium" },
+  { date:day(0),  source:"SEC Set A q17",      domain:"SEC", rule:"dangling modifier", picked:"C", correct:"B", why:"misread",  note:"Rule 7 · modifiers · Hard" },
+  { date:day(0),  source:"SEC Set A q23",      domain:"SEC", rule:"subject-verb agreement across a prepositional phrase", picked:"A", correct:"C", why:"careless", note:"Rule 5 · agreement · Medium" },
+  { date:day(0),  source:"SEC Set A q26",      domain:"SEC", rule:"comma splice — conjunctive adverb", picked:"D", correct:"A", why:"content",  note:"Rule 2 · joining · Hard" },
+  { date:day(1),  source:"Practice #1 RW q5",  domain:"CAS", rule:"words in context — picked a word from near the blank", picked:"B", correct:"D", why:"misread",  note:"Medium" },
+  { date:day(1),  source:"Practice #1 RW q12", domain:"CAS", rule:"text structure — main purpose", picked:"C", correct:"A", why:"misread",  note:"Hard" },
+  { date:day(1),  source:"Practice #1 RW q16", domain:"INI", rule:"inference — answer claims more than the text supports", picked:"A", correct:"B", why:"misread",  note:"Hard" },
+  { date:day(1),  source:"Practice #1 RW q21", domain:"SEC", rule:"pronoun ambiguity", picked:"D", correct:"C", why:"content",  note:"Rule 6 · pronouns" },
+  { date:day(1),  source:"Practice #1 RW q24", domain:"EOI", rule:"transition — contrast word where the sentences agree", picked:"B", correct:"C", why:"misread",  note:"" },
+  { date:day(1),  source:"Practice #1 Math q9",  domain:"ALG", rule:"dropped a negative sign", picked:"C", correct:"B", why:"careless", note:"execution, not content" },
+  { date:day(1),  source:"Practice #1 Math q18", domain:"ADV", rule:"vertex form — sign of a", picked:"A", correct:"D", why:"content",  note:"" },
+  { date:day(1),  source:"Practice #1 Math q20", domain:"GEO", rule:"ran out of time", picked:"—", correct:"B", why:"timing",   note:"left blank at the end of the module" },
+  { date:day(3),  source:"SEC Set B q8",       domain:"SEC", rule:"comma splice — conjunctive adverb", picked:"C", correct:"B", why:"content",  note:"Rule 2 · joining · Medium" },
+  { date:day(4),  source:"SEC Set C q14",      domain:"SEC", rule:"verb tense — match the passage timeline", picked:"A", correct:"C", why:"misread",  note:"Rule 8 · tense · Hard" },
+  { date:day(5),  source:"Set D q6",           domain:"CAS", rule:"words in context — picked a word from near the blank", picked:"A", correct:"C", why:"misread",  note:"vocab: tenuous" },
+  { date:day(5),  source:"Set D q13",          domain:"CAS", rule:"words in context — did not know the word", picked:"B", correct:"D", why:"content",  note:"vocab: corroborate" },
+  { date:day(7),  source:"Set E q4",           domain:"INI", rule:"inference — answer claims more than the text supports", picked:"C", correct:"D", why:"misread",  note:"Medium" },
+  { date:day(7),  source:"Set E q15",          domain:"INI", rule:"command of evidence — quote supports only half the claim", picked:"B", correct:"A", why:"misread",  note:"Hard" },
+  { date:day(8),  source:"Practice #2 RW q8",  domain:"CAS", rule:"words in context — picked a word from near the blank", picked:"D", correct:"B", why:"misread",  note:"Hard" },
+  { date:day(8),  source:"Practice #2 RW q19", domain:"INI", rule:"inference — answer claims more than the text supports", picked:"B", correct:"C", why:"misread",  note:"Hard" },
+  { date:day(8),  source:"Practice #2 RW q22", domain:"SEC", rule:"comma splice — conjunctive adverb", picked:"A", correct:"D", why:"careless", note:"Rule 2 · joining · knew it, rushed" },
+  { date:day(8),  source:"Practice #2 Math q14", domain:"ADV", rule:"factoring a quadratic in x²", picked:"—", correct:"9", why:"content", note:"student-produced response, left blank" },
+  { date:day(10), source:"Set F q9",           domain:"SEC", rule:"colon after an incomplete clause", picked:"B", correct:"A", why:"careless", note:"Rule 4 · colons" },
+  { date:day(11), source:"Set G q3",           domain:"CAS", rule:"words in context — secondary meaning", picked:"C", correct:"B", why:"content",  note:"vocab: qualify (to limit)" },
+  { date:day(12), source:"Set H q11",          domain:"INI", rule:"quantitative evidence — misread the graph's axis", picked:"D", correct:"C", why:"careless", note:"" },
+  { date:day(13), source:"Set I q7",           domain:"EOI", rule:"rhetorical synthesis — answer ignores the stated goal", picked:"A", correct:"D", why:"misread",  note:"" }
+],
+
+/* ── words. `missed` counts how many times it has burned you ─────────── */
+vocab: [
+  { word:"tenuous",     mine:"weak, barely holding together", where:"Set D q6",  missed:1 },
+  { word:"corroborate", mine:"to back up with more evidence", where:"Set D q13", missed:1 },
+  { word:"ostensibly",  mine:"seemingly, on the surface",     where:"Set G",     missed:0 }
+],
+
+/* ── the secondary-meaning list from 05-vocabulary.md ────────────────── */
+secondary: [
+  { word:"qualify",       everyday:"to be eligible",     sat:"to limit or soften a claim", missed:1 },
+  { word:"yield",         everyday:"to give way",        sat:"to produce", missed:0 },
+  { word:"sound",         everyday:"noise",              sat:"valid, well-reasoned", missed:0 },
+  { word:"novel",         everyday:"a book",             sat:"new", missed:0 },
+  { word:"discriminating",everyday:"prejudiced",         sat:"perceptive, able to tell fine differences", missed:0 },
+  { word:"appreciate",    everyday:"to enjoy",           sat:"to increase in value, or to understand fully", missed:0 },
+  { word:"check",         everyday:"to verify",          sat:"to restrain or stop", missed:0 },
+  { word:"exhaustive",    everyday:"tiring",             sat:"thorough, complete", missed:0 },
+  { word:"arrest",        everyday:"to detain",          sat:"to halt", missed:0 },
+  { word:"economy",       everyday:"financial system",   sat:"efficiency, using little", missed:0 },
+  { word:"reservation",   everyday:"a booking",          sat:"a doubt", missed:0 },
+  { word:"compromise",    everyday:"to meet in the middle", sat:"to weaken or undermine", missed:0 },
+  { word:"singular",      everyday:"one, alone",           sat:"extraordinary, remarkable", missed:0 },
+  { word:"reserve",       everyday:"a booking; calm",      sat:"holding back, constraint in speech or manner", missed:0 }
+],
+
+/* ── the 8 rules. `tags` are matched against error-log `rule` strings ── */
+rules: [
+  { n:1, title:"Independent vs dependent clauses", tags:["clause","clauses","independent","dependent","fragment"],
+    body:"An independent clause has a subject and verb and stands alone. A dependent clause opens with a subordinator (because, although, when, since, if, while, that, which, who) and cannot. <em>Every punctuation question starts here.</em> Read the text on each side of the mark and ask: can this stand alone?" },
+  { n:2, title:"Joining two independent clauses", tags:["splice","comma splice","fanboys","semicolon","joining","however"],
+    body:"Three legal joins: period, semicolon, or comma + FANBOYS (for, and, nor, but, or, yet, so). A bare comma between two independent clauses is a <em>comma splice</em> and is always wrong.<span class='ex'>however / therefore / moreover / nevertheless are NOT FANBOYS.\nX, however, Y is a splice. It needs a semicolon or period.</span>" },
+  { n:3, title:"Non-essential elements", tags:["nonessential","non-essential","parenthetical","dashes","paired"],
+    body:"Information you can delete without breaking the sentence gets set off by paired commas, paired dashes, or parentheses. The punctuation must <em>match on both sides</em>. Comma-in dash-out is always wrong — a free point once you notice it." },
+  { n:4, title:"Colons", tags:["colon","colons"],
+    body:"A colon goes only after a complete independent clause. What follows can be a list, explanation, definition, or a single word.<span class='ex'>Test: cover everything after the colon.\nDoes what remains stand alone? If no, the colon is wrong.</span>Dashes can do a colon's job. A colon cannot do a dash's job — it cannot open a mid-sentence interruption." },
+  { n:5, title:"Subject-verb agreement", tags:["subject-verb","sv","agreement","subject verb"],
+    body:"Find the actual subject and ignore everything between it and the verb — usually a prepositional phrase planted to confuse you.<span class='ex'>The box of nails IS heavy.   (subject = box, not nails)</span>Watch inverted order (<em>There are three reasons</em>), collective nouns, and each / every / neither, which are singular." },
+  { n:6, title:"Pronoun agreement and ambiguity", tags:["pronoun","pronouns","its","their","whose","ambiguity"],
+    body:"A singular antecedent takes a singular pronoun. If it is unclear which noun a pronoun points to, the answer is usually the one that <em>repeats the noun</em> instead. Also tested as spelling: its/it's, their/there/they're, whose/who's." },
+  { n:7, title:"Modifier placement", tags:["modifier","modifiers","dangling","misplaced"],
+    body:"The thing being described comes immediately after the modifying phrase.<span class='ex'>Running late, the bus was missed.   ✗ the bus was not running late</span>Whatever the phrase describes has to be the very next thing in the sentence &mdash; and <em>the next thing means the head noun, not the first word.</em> Delete every possessive, every <em>of</em>-phrase and the word <em>there</em> from the front of the choice; what is left is what the modifier claims to describe.<span class='ex'>Despite being lightweight, the bicycle&rsquo;s two flaws are&hellip;   ✗ head is &lsquo;flaws&rsquo;, and flaws are not lightweight<br>Despite being lightweight, the bicycle has two flaws:   ✓</span>The possessive is a trap in both directions &mdash; sometimes the right answer needs it, sometimes it is what breaks the answer. Run the deletion test, do not guess the direction." },
+  { n:8, title:"Verb tense and form", tags:["tense","verb form","tenses"],
+    body:"Two separate tests. Run finiteness first &mdash; it is faster and it kills whole choices.<br><br><b>Form: does this clause already have a finite verb?</b> A clause needs exactly one verb able to stand as its main verb, and a <em>that</em> or <em>which</em> clause needs its own. No finite verb yet &rarr; the blank <em>is</em> the main verb and every <em>being</em> / <em>to be</em> / <em>having been</em> choice is wrong however smoothly it reads. Already has one &rarr; the blank must be nonfinite.<span class='ex'>&hellip;a new survey of the region&rsquo;s rivers suggests that the average water level ______ higher by 2040.<br>being ✗ fragment &middot; will be ✓</span>The pile of modifiers between subject and blank is there to make it feel as though a verb already happened. The -ing form is never a main verb by itself.<br><br><b>Tense: match the timeline the rest of the passage establishes.</b> The correct tense is almost never determined by the sentence alone, so <em>read the sentence before it</em>." }
+],
+
+nearRules: [
+  { title:"No comma between subject and verb", tags:["subject verb comma"],
+    body:"<span class='ex'>The students who studied hardest, performed best.   ✗</span>No exceptions." },
+  { title:"No comma before a restrictive <i>that</i>", tags:["that which","restrictive"],
+    body:"<span class='ex'>The book that I read      ✓ no comma\nThe book, which I read,   ✓ paired commas</span>" }
+],
+
+transitions: [
+  { rel:"Addition",   words:"furthermore, moreover, additionally, also" },
+  { rel:"Contrast",   words:"however, nevertheless, conversely, on the other hand" },
+  { rel:"Cause",      words:"therefore, thus, consequently, as a result" },
+  { rel:"Example",    words:"for instance, for example, specifically" },
+  { rel:"Concession", words:"granted, admittedly, to be sure" },
+  { rel:"Sequence",   words:"subsequently, meanwhile, ultimately" }
+]
+
+};
+/* ═══════════════════════════ END EDIT ZONE ══════════════════════════════ */
+</script>
+
+<header>
+  <div class="hbar">
+    <div class="brand">
+      <h1>SAT Command Center</h1>
+      <span id="brandsub"></span>
+    </div>
+    <div class="cd"><b class="num" id="cdn">–</b><i id="cdl">days to<br>test day</i></div>
+    <div class="cd proj" id="projwrap" title="">
+      <b class="num" id="projn">–</b>
+      <i id="projl">projected<br>total</i>
+      <span class="confbox"><span class="confbar"><span id="conffill"></span></span><em id="confl">–</em></span>
+    </div>
+    <div class="cd"><b class="num" id="gapn">–</b><i id="gapl">points to<br>target</i></div>
+    <button class="themebtn" id="theme" title="Toggle theme">◐</button>
+  </div>
+  <nav id="nav"></nav>
+</header>
+
+<div class="wrap">
+  <div class="strip">
+    <div class="card today" id="today"></div>
+    <div class="card gap" id="gapcard"></div>
+  </div>
+
+  <section id="v-cal"></section>
+  <section id="v-err" hidden></section>
+  <section id="v-top" hidden></section>
+  <section id="v-voc" hidden></section>
+</div>
+
+<script>
+/* ─────────── helpers ─────────── */
+const $ = s => document.querySelector(s);
+const el = (t,c,h) => { const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e; };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const D  = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const KEY = dt => dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+const FMT = s => { const t=D(s); return MON[t.getMonth()]+" "+t.getDate(); };
+const DAYS = (a,b) => Math.round((b-a)/864e5);
+const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const TODAY = (()=>{ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); })();
+const TKEY = KEY(TODAY);
+
+const ALLDAYS = DATA.weeks.flatMap(w => w.days.map(d => ({...d, week:w.n})));
+const WHY = { content:"--c-content", misread:"--c-misread", careless:"--c-careless", timing:"--c-timing" };
+const WHYTEXT = {
+  content:"Did not know the rule, concept, or word.",
+  misread:"Knew it, answered a different question than the one asked.",
+  careless:"Knew it, read it right, still picked wrong.",
+  timing:"Rushed it or ran out of clock."
+};
+const cvar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* which plan week does a date fall in? */
+function weekOf(dstr){
+  for(const w of DATA.weeks){
+    const a=D(w.days[0].date), b=D(w.days[w.days.length-1].date), x=D(dstr);
+    if(x>=a && x<=b) return w.n;
+  }
+  return null;
+}
+
+/* ═══════════ prediction primitives (used by the header and by Topics) ═══
+   `wilson` is the 95% interval on a proportion. `predictFor` turns logged
+   practice for one domain into a score band through the two anchors in
+   DATA.predict. Both live at top level because the header projection and the
+   Topics tab must never disagree about the number. ═════════════════════ */
+function wilson(k, n, z){
+  const p = k/n, d = 1 + z*z/n;
+  const c = (p + z*z/(2*n))/d;
+  const h = z/d * Math.sqrt(p*(1-p)/n + z*z/(4*n*n));
+  return [Math.max(0,c-h), Math.min(1,c+h)];
+}
+/* sets defaults to every logged set for the domain; pass a subset to ask
+   "what does only the evidence since the last test say?" */
+/* the latest measured band for a domain, as "lo–hi" */
+function bandNow(code){
+  const d = [...DATA.domains.rw, ...DATA.domains.math].find(x=>x.code===code);
+  const b = d && [...d.bands].reverse().find(x=>x);
+  return b ? b[0]+"–"+b[1] : "unmeasured";
+}
+function predictFor(code, sets){
+  const P = DATA.predict;
+  sets = sets || (DATA.practice||[]).filter(s=>s.domain===code);
+  if(!P || !sets.length) return null;
+  const n = sets.reduce((a,s)=>a+s.total,0);
+  if(!n) return null;
+  const k = sets.reduce((a,s)=>a+s.correct,0);
+  const untimedShare = sets.reduce((a,s)=>a+(s.timed?0:s.total),0)/n;
+  const [A,B] = P.anchors;
+  const map = x => A.score + (x-A.acc)*(B.score-A.score)/(B.acc-A.acc);
+  const pen = P.untimed * untimedShare;
+  const R  = x => Math.round(Math.max(200, Math.min(800, map(x)-pen))/10)*10;
+  const [lo,hi] = wilson(k, n, P.z);
+  /* what the band would look like at larger n if accuracy held — this is
+     the answer to "does it get tighter", shown rather than asserted */
+  const proj = [n*2, n*4, n*8].map(N=>{
+    const [a,b] = wilson(Math.round(k/n*N), N, P.z);
+    return { n:Math.round(N), width: R(b)-R(a) };
+  });
+  return { n, k, acc:k/n, sets:sets.length, untimedShare,
+           lo:R(lo), hi:R(hi), mid:R(k/n), width:R(hi)-R(lo), proj };
+}
+
+/* ═══════════ the projection behind the number at the top ═══════════════
+   Level comes from the most recent measured section scores. Those are real
+   reported numbers and nothing beats them. Movement comes only from domain
+   evidence logged AFTER that test — so with no fresh evidence the projection
+   IS the last score, and it moves only when new data says it should.
+
+   The interval is a 95% half-width built from three sources, in quadrature:
+     · fresh practice   — the Wilson band on each domain, weighted by that
+                          domain's share of the section, widened by the untimed
+                          share, and summed (not squared) within a section
+                          because domains move together
+     · section noise    — the bounce a section score has anyway
+     · drift            — uncertainty that grows the longer it has been since
+                          anything was measured
+   Confidence is that half-width read against `confRef`. A full test resets
+   it; logged practice and elapsed time both lower it. See docs/projection.md ══ */
+const PROJ = (()=>{
+  const P = DATA.predict;
+  if(!P) return null;
+  let li = -1;
+  DATA.scores.forEach((sc,i)=>{ if(sc.rw!=null && sc.math!=null) li = i; });
+  if(li < 0) return null;
+  const base = DATA.scores[li];
+
+  function section(list, measured){
+    let delta = 0, half = 0, nq = 0, moved = [];
+    list.forEach(d=>{
+      const w = d.weight/100;
+      /* the band this domain had on that same test — the thing fresh
+         evidence is measured against */
+      let ref = null;
+      for(let i=Math.min(li, d.bands.length-1); i>=0; i--) if(d.bands[i]){ ref = d.bands[i]; break; }
+      if(!ref) return;
+      const sets = (DATA.practice||[]).filter(x=>x.domain===d.code && x.date > base.date);
+      if(!sets.length) return;
+      const est = predictFor(d.code, sets);
+      if(!est) return;
+      const move = est.mid - (ref[0]+ref[1])/2;
+      delta += w * move;
+      /* untimed work already loses points off the level; it also buys less
+         confidence, so it widens the interval instead of just shifting it */
+      half  += w * (est.width/2) * (1 + est.untimedShare);
+      nq    += est.n;
+      moved.push({ code:d.code, name:d.name, weight:d.weight, move, n:est.n });
+    });
+    return { measured, score: measured + delta, delta, half, nq, moved };
+  }
+
+  const rw   = section(DATA.domains.rw,   base.rw);
+  const math = section(DATA.domains.math, base.math);
+  const weeks = Math.max(0, DAYS(D(base.date), TODAY) / 7);
+  const drift = P.drift * weeks;
+  const q = x => x*x;
+  const half = Math.sqrt(q(rw.half) + q(math.half) + 2*q(P.sectionNoise) + q(drift));
+  const total = rw.score + math.score;
+  const conf  = Math.max(0, Math.min(99, Math.round(100 * (1 - half/P.confRef))));
+  return {
+    base, rw, math, weeks, drift, half: Math.round(half), conf,
+    total: Math.round(total),
+    lo: Math.round((total-half)/10)*10, hi: Math.round((total+half)/10)*10,
+    nq: rw.nq + math.nq,
+    moved: rw.moved.concat(math.moved)
+  };
+})();
+
+/* ─────────── header ─────────── */
+const testD = D(DATA.meta.testDate);
+const left  = DAYS(TODAY, testD);
+$("#cdn").textContent = left > 0 ? left : (left===0 ? "0" : "—");
+$("#cdl").innerHTML   = left > 1 ? "days to<br>test day" : left===1 ? "day to<br>test day" : left===0 ? "TEST<br>DAY" : "test day<br>passed";
+$("#brandsub").textContent = MON[testD.getMonth()]+" "+testD.getDate()+", "+testD.getFullYear();
+
+const latest = [...DATA.scores].reverse().find(s => s.rw!=null && s.math!=null) || DATA.scores[0];
+const cur    = (latest.rw||0) + (latest.math||0);
+
+/* the headline number is the projection, not the last score — and the gap is
+   measured from the projection too, so the two stats agree */
+const shown = PROJ ? PROJ.total : cur;
+const gap   = DATA.meta.target - shown;
+$("#gapn").textContent = gap > 0 ? "+"+gap : String(gap);
+$("#gapl").innerHTML   = "points to<br>"+DATA.meta.target;
+
+if(PROJ){
+  $("#projn").textContent = PROJ.total;
+  $("#projl").innerHTML   = "projected<br>±"+PROJ.half;
+  $("#conffill").style.width = PROJ.conf + "%";
+  $("#confl").textContent = PROJ.conf + "% conf";
+  const src = PROJ.nq
+    ? PROJ.nq + " practice question" + (PROJ.nq===1?"":"s") + " logged since " + FMT(PROJ.base.date)
+    : "no evidence since " + FMT(PROJ.base.date) + " — the interval is widening on its own";
+  $("#projwrap").title =
+      PROJ.lo + "–" + PROJ.hi + " (95%). Anchored on " + PROJ.base.label + ", " + FMT(PROJ.base.date)
+    + " (" + PROJ.base.rw + " + " + PROJ.base.math + " = " + (PROJ.base.rw+PROJ.base.math) + "). "
+    + src + ". Confidence = 1 − (±" + PROJ.half + " / ±" + DATA.predict.confRef + ").";
+}else{
+  $("#projn").textContent = cur;
+  $("#projl").innerHTML   = "last<br>measured";
+  $("#conffill").style.width = "0%";
+  $("#confl").textContent = "no data";
+}
+
+/* ─────────── today panel ─────────── */
+(function(){
+  const box = $("#today");
+  let d = ALLDAYS.find(x => x.date === TKEY), state = "today";
+  if(!d){
+    if(TKEY === DATA.meta.testDate){
+      box.innerHTML = '<div class="top"><span class="tag" style="background:var(--test-soft);color:var(--test)">Today</span>'
+        + '<span class="date">'+DOW[testD.getDay()]+", "+FMT(DATA.meta.testDate)+'</span></div>'
+        + '<div class="task">Test day. Everything in this folder was for this morning.</div>'
+        + '<div class="meta">Guess on everything · Flag past 2 min on math · Module 1 matters more</div>';
+      return;
+    }
+    d = ALLDAYS.find(x => D(x.date) > TODAY);
+    state = d ? "next" : "past";
+  }
+  if(!d){ box.innerHTML = '<div class="task">Plan complete.</div>'; return; }
+
+  const dd = D(d.date), COL = {test:"--test", review:"--accent", drill:"--dim", rest:"--faint"}[d.type];
+  const label = state==="today" ? "Today" : (DAYS(TODAY,dd)===1 ? "Tomorrow" : "Next up · in "+DAYS(TODAY,dd)+" days");
+  const done  = d.done;
+  box.innerHTML =
+    '<div class="top">'
+    + '<span class="tag" style="background:'+(done?'var(--ok-soft)':'var(--accent-soft)')+';color:'+(done?'var(--ok)':'var(--accent)')+'">'+label+(done?' ✓ done':'')+'</span>'
+    + '<span class="date">'+DOW[dd.getDay()]+", "+FMT(d.date)+'</span>'
+    + '<span class="tiny" style="color:var(--faint);margin-left:auto">Week '+d.week+'</span>'
+    + '</div>'
+    + '<div class="task">'+esc(d.task)+'</div>'
+    + '<div class="meta">'
+    +   '<span style="color:var('+COL+');font-weight:640;text-transform:capitalize">'+d.type+'</span>'
+    +   '<span>'+HM(d.mins)+'</span>'
+    +   (d.flag ? '<span style="color:var(--warn);font-weight:620">'+esc(d.flag)+'</span>' : '')
+    + '</div>';
+})();
+
+/* ─────────── score gap panel ─────────── */
+(function(){
+  const box = $("#gapcard"), b = DATA.meta.baseline;
+  const rwNeed = DATA.meta.target - latest.math, rwMove = rwNeed - latest.rw;
+  const total = DATA.meta.target, floor = 1000, span = total - floor;
+  const rwPct = Math.max(0,(latest.rw - floor/2))/span*100;
+  const seg = (v,c) => '<span style="width:'+Math.max(0,Math.min(100, v/total*100))+'%;background:'+c+'"></span>';
+  box.innerHTML =
+    '<div class="head"><span class="lab">Where the points are</span>'
+    + '<b class="num">'+(PROJ?PROJ.total:cur)+' <span style="color:var(--faint);font-weight:400">/</span> '+total+'</b></div>'
+    + '<div class="rail">'
+    +   seg(latest.rw,  "var(--accent)")
+    +   seg(latest.math,"var(--ok)")
+    +   '<span style="flex:1;background:repeating-linear-gradient(45deg,var(--rail),var(--rail) 4px,var(--line2) 4px,var(--line2) 5px)"></span>'
+    + '</div>'
+    + '<div class="legend">'
+    +   '<span><i style="background:var(--accent)"></i>RW <b class="num">'+latest.rw+'</b> <span style="color:var(--bad);font-weight:600">→ '+rwNeed+' ('+(rwMove>=0?'+':'')+rwMove+')</span></span>'
+    +   '<span><i style="background:var(--ok)"></i>Math <b class="num">'+latest.math+'</b> <span style="color:var(--ok);font-weight:600">→ hold</span></span>'
+    + '</div>'
+    + '<div class="tiny muted" style="margin-top:11px;line-height:1.5">With Math held at '+latest.math+', Reading and Writing has to move about <b style="color:var(--text)">'+(rwMove>=0?'+':'')+rwMove+'</b> to reach '+total+'. '
+    + '<span style="color:var(--faint)">Source: '+esc(latest.label)+', '+FMT(latest.date)+'.</span></div>'
+    + (PROJ ? '<div class="tiny muted" style="margin-top:9px;line-height:1.6;border-top:1px solid var(--line);padding-top:10px">'
+        + '<b style="color:var(--warn)">Projected '+PROJ.total+'</b> '
+        + '<span class="num">'+PROJ.lo+'–'+PROJ.hi+'</span> at 95%, <b class="num" style="color:var(--text)">'+PROJ.conf+'%</b> confidence. '
+        + 'Level is anchored on '+esc(PROJ.base.label)+' ('+FMT(PROJ.base.date)+'); movement comes only from evidence logged after it'
+        + (PROJ.nq
+             ? ' — <b class="num" style="color:var(--text)">'+PROJ.nq+'</b> practice question'+(PROJ.nq===1?'':'s')+' so far'
+                 + (PROJ.moved.length
+                      ? ', moving '+PROJ.moved.map(m=>esc(m.code)+' <span style="color:var('+(m.move>0?'--ok':'--bad')+')">'
+                          +(m.move>0?'+':'')+Math.round(m.move)+'</span>').join(', ')
+                      : '')
+             : ', and there is none yet')
+        + '. Untimed sets widen the interval on top of the '+DATA.predict.untimed+'-point level discount they already take'
+        + '. The interval also carries ±'+DATA.predict.sectionNoise+' of section bounce per section and ±'
+        + Math.round(PROJ.drift)+' of drift for the '+PROJ.weeks.toFixed(1)+' weeks since that test — '
+        + 'so <b style="color:var(--text)">confidence falls on its own if nothing gets logged</b>. Logged practice lowers it too, less so when timed. '
+        + 'Your next full practice test is what actually raises it: a full test resets the anchor and zeroes the drift.'
+        + '</div>' : '');
+})();
+
+/* ─────────── tabs ─────────── */
+const TABS = [
+  { id:"cal", label:"Calendar" },
+  { id:"err", label:"Misses",  count:()=>DATA.errors.length },
+  { id:"top", label:"Topics" },
+  { id:"voc", label:"Vocab",   count:()=>DATA.vocab.length + DATA.secondary.length }
+];
+(function(){
+  const nav = $("#nav");
+  TABS.forEach((t,i)=>{
+    const b = el("button", null, t.label + (t.count && t.count() ? ' <span class="pill num">'+t.count()+'</span>' : ''));
+    b.setAttribute("aria-selected", i===0);
+    b.onclick = () => {
+      TABS.forEach(x => { $("#v-"+x.id).hidden = x.id!==t.id; });
+      [...nav.children].forEach(c => c.setAttribute("aria-selected", c===b));
+      window.scrollTo({top:0, behavior:"smooth"});
+    };
+    nav.appendChild(b);
+  });
+})();
+
+/* human time: 45 -> "45 min", 150 -> "2 h 30 m", 180 -> "3 h", 0 -> "rest day" */
+function HM(m){
+  if(!m) return "rest day";
+  if(m < 60) return m+" min";
+  const h = Math.floor(m/60), r = m%60;
+  return h+" h"+(r?" "+r+" m":"");
+}
+
+/* ══════════════════ CALENDAR ══════════════════ */
+(function(){
+  const v = $("#v-cal");
+  const doneDays = ALLDAYS.filter(d=>d.done).length;
+  const doneMins = ALLDAYS.filter(d=>d.done).reduce((s,d)=>s+d.mins,0);
+  const allMins  = ALLDAYS.reduce((s,d)=>s+d.mins,0);
+
+  v.appendChild(el("h2","sec",DATA.weeks.length+" weeks <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— "
+    + doneDays+"/"+ALLDAYS.length+" days logged · "+(doneMins?HM(doneMins):"0 min")+" of "+HM(allMins)+"</span>"));
+
+  const head = el("div","calhead");
+  head.appendChild(el("div",null,""));
+  Array.from({length:7},(_,i)=>DOW[(D(DATA.weeks[0].days[0].date).getDay()+i)%7]).forEach(x=>head.appendChild(el("div",null,x)));
+  v.appendChild(head);
+
+  const detail = el("div","card detail");
+  detail.hidden = true;
+
+  DATA.weeks.forEach(w=>{
+    const row = el("div","week");
+    row.appendChild(el("div","wlabel","<b>Week "+w.n+"</b><span>"+esc(w.title)+"</span>"));
+    w.days.forEach(d=>{
+      const dt = D(d.date), past = dt < TODAY, isToday = d.date===TKEY;
+      const b = el("button","day t-"+d.type+(d.done?" done":"")+(past?" past":"")+(isToday?" today":""));
+      b.innerHTML =
+        '<div class="dnum"><b class="num">'+MON[dt.getMonth()]+" "+dt.getDate()+'</b><em>'+DOW[dt.getDay()].toUpperCase()+'</em></div>'
+        + (d.flag ? '<span class="flag">'+esc(d.flag)+'</span>' : '')
+        + '<p>'+esc(d.task)+'</p>'
+        + '<div class="mins">'+HM(d.mins).toUpperCase()+'</div>';
+      b.onclick = ()=>{
+        document.querySelectorAll(".day.sel").forEach(x=>x.classList.remove("sel"));
+        b.classList.add("sel");
+        const errs = DATA.errors.filter(e=>e.date===d.date);
+        detail.hidden = false;
+        detail.innerHTML =
+          '<h3>'+DOW[dt.getDay()]+", "+MON[dt.getMonth()]+" "+dt.getDate()+", "+dt.getFullYear()+"</h3>"
+          + '<div class="sub">Week '+w.n+" · "+esc(w.title)+" · "+esc(w.note)+'</div>'
+          + '<p>'+esc(d.task)+'</p>'
+          + '<div class="chips">'
+          +   '<span class="chip" style="color:var(--text)">'+HM(d.mins)+'</span>'
+          +   '<span class="chip" style="text-transform:capitalize">'+d.type+'</span>'
+          +   '<span class="chip" style="color:'+(d.done?"var(--ok)":"var(--faint)")+'">'+(d.done?"✓ done":"not logged")+'</span>'
+          +   (d.flag ? '<span class="chip" style="color:var(--warn);border-color:var(--warn)">'+esc(d.flag)+'</span>' : '')
+          +   (errs.length ? '<span class="chip" style="color:var(--bad);border-color:var(--bad)">'+errs.length+' miss'+(errs.length>1?"es":"")+' logged</span>' : '')
+          + '</div>'
+          + (d.done ? '' : '<div class="hint" style="margin-top:13px">Say <code>mark '+MON[dt.getMonth()]+" "+dt.getDate()+' done</code> in the terminal to check this off.</div>');
+        detail.scrollIntoView({behavior:"smooth", block:"nearest"});
+      };
+      row.appendChild(b);
+    });
+    v.appendChild(row);
+  });
+
+  const td = el("div","testday");
+  td.innerHTML = '<b>'+FMT(DATA.meta.testDate)+' · '+["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][testD.getDay()]+' · Test day</b>'
+    + '<span>RW 27 q / 32 min per module — ~71 s each. Math 22 q / 35 min — ~95 s each.</span>'
+    + '<span style="margin-left:auto;font-weight:640;color:var(--test)" class="num">'+(left>=0?left+" days out":"—")+'</span>';
+  v.appendChild(td);
+  v.appendChild(detail);
+
+  /* checkpoints */
+  v.appendChild(el("h2","sec","Checkpoints"));
+  const cp = el("div","card");
+  /* a checkpoint reads the test taken on it or the day before — never a later one */
+  const scoreFor = date => {
+    const s = DATA.scores.find(x=>{ const g = DAYS(D(x.date), D(date)); return g>=0 && g<=1; });
+    return s && s.rw!=null ? s.rw : null;
+  };
+  cp.innerHTML = '<div class="scroll"><table><thead><tr><th>Date</th><th>Metric</th><th>Threshold</th><th>Actual</th><th>Then what</th></tr></thead><tbody>'
+    + DATA.checkpoints.map(c=>{
+        const got = scoreFor(c.date);
+        const pass = got==null ? null : got >= c.threshold;
+        const st = got==null
+          ? '<span class="muted">—</span>'
+          : '<b class="num" style="color:'+(pass?"var(--ok)":"var(--bad)")+'">'+got+(pass?" ✓":" ✗")+'</b>';
+        return '<tr><td class="num" style="white-space:nowrap">'+FMT(c.date)+'</td><td>'+esc(c.metric)+'</td>'
+             + '<td class="num" style="font-weight:620">'+c.threshold+'+</td><td>'+st+'</td>'
+             + '<td class="muted">'+esc(c.extra||"—")+'</td></tr>';
+      }).join("")
+    + '</tbody></table></div>';
+  v.appendChild(cp);
+
+  /* ── predicted band from pooled practice accuracy ──────────────────────
+     Wilson score interval on the pooled raw count, mapped through the two
+     anchors in DATA.predict. The interval is what narrows as questions
+     accumulate — 40 questions cannot pin a band, 300 nearly can. Wilson
+     rather than the normal approximation because n is small and p is high,
+     where the normal interval overshoots past 1.                          */
+
+  /* domain bands — the actual argument for the plan */
+  v.appendChild(el("h2","sec","Domain bands <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— where the points actually are</span>"));
+  const bandBox = el("div","card");
+  bandBox.style.padding = "6px 18px 14px";
+
+  function bandGroup(title, list){
+    const withLever = list.map(d=>{
+      const b = [...d.bands].reverse().find(x=>x) || d.bands[0];
+      const mid = (b[0]+b[1])/2;
+      return {...d, cur:b, mid, lever: d.weight*(800-mid)};
+    });
+    let topIdx = 0;
+    withLever.forEach((x,i)=>{ if(x.lever > withLever[topIdx].lever) topIdx = i; });
+    let h = '<div class="lab" style="padding:16px 0 6px">'+title+'</div>';
+    withLever.forEach((d,i)=>{
+      const [lo,hi] = d.cur;
+      const l = (lo-200)/600*100, wd = Math.max(3,(hi-lo)/600*100);
+      const cls = hi<=600 ? "weak" : lo>=680 ? "strong" : "";
+      /* only badge a real lever: the top one, and only if it is not already strong */
+      const isTop = i===topIdx && cls!=="strong";
+      /* a domain with logged practice gets a second, hollow bar underneath the
+         measured one — estimate and measurement never share a visual weight */
+      const P = predictFor(d.code);
+      const pl = P ? (P.lo-200)/600*100 : 0, pw = P ? Math.max(3,(P.hi-P.lo)/600*100) : 0;
+      h += '<div class="band">'
+        + '<div class="nm"><b>'+esc(d.name)+(isTop?' <span style="color:var(--bad);font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap">◄ BIGGEST LEVER</span>':'')+'</b>'
+        + '<span>'+d.weight+'% of section</span></div>'
+        + '<div class="scale">'
+        +   '<div class="rng '+cls+'" style="left:'+l+'%;width:'+wd+'%'+(P?';top:0;bottom:11px':'')+'"></div>'
+        +   (P ? '<div title="predicted from '+P.n+' practice questions" style="position:absolute;bottom:1px;height:9px;'
+                 +'left:'+pl+'%;width:'+pw+'%;border:1px dashed var(--warn);border-radius:3px;'
+                 +'background:color-mix(in srgb, var(--warn) 18%, transparent)"></div>'
+               + '<div style="position:absolute;bottom:1px;height:9px;width:2px;left:'+((P.mid-200)/600*100)+'%;background:var(--warn)"></div>'
+             : '')
+        + '</div>'
+        + '<div class="txt num">'+lo+'–'+hi+'<em>'+(P
+              ? '<span style="color:var(--warn)">'+P.lo+'–'+P.hi+' est</span>'
+              : (hi<=600?"weak":lo>=680?"strong":"mid"))+'</em></div>'
+        + '</div>';
+    });
+    return h;
+  }
+  bandBox.innerHTML = bandGroup("Reading and Writing", DATA.domains.rw)
+    + '<div class="axis"><span>200</span><span>400</span><span>600</span><span>800</span></div>'
+    + bandGroup("Math", DATA.domains.math)
+    + '<div class="axis"><span>200</span><span>400</span><span>600</span><span>800</span></div>';
+  v.appendChild(bandBox);
+
+  /* ── the estimate, with its own assumptions on the face of it ───────── */
+  const predicted = [...DATA.domains.rw, ...DATA.domains.math]
+        .map(d=>({d, P:predictFor(d.code)})).filter(x=>x.P);
+  if(predicted.length){
+    v.appendChild(el("h2","sec","Predicted from practice <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— an estimate, not a score</span>"));
+    const pc = el("div","card"); pc.style.padding = "16px 18px 14px";
+    let ph = "";
+    predicted.forEach(({d,P})=>{
+      const meas = [...d.bands].reverse().find(x=>x) || d.bands[0];
+      const move = P.mid - (meas[0]+meas[1])/2;
+      ph += '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 16px;margin-bottom:11px">'
+         +   '<b style="font-size:13px;font-weight:580">'+esc(d.name)+'</b>'
+         +   '<span class="num" style="font-size:23px;font-weight:680;color:var(--warn);letter-spacing:-.02em">'+P.lo+'–'+P.hi+'</span>'
+         +   '<span class="tiny muted">midpoint <b class="num" style="color:var(--text)">'+P.mid+'</b>'
+         +     ' · measured '+meas[0]+'–'+meas[1]+' on '+FMT((DATA.scores[d.bands.indexOf(meas)]||DATA.scores[0]).date)
+         +     ' · <span style="color:var('+(move>0?"--ok":"--bad")+')">'+(move>0?"+":"")+Math.round(move)+'</span></span>'
+         + '</div>'
+         + '<div class="tiny muted" style="line-height:1.75;margin-bottom:13px">'
+         +   '<b class="num" style="color:var(--text)">'+P.k+'/'+P.n+'</b> = '+(P.acc*100).toFixed(0)+'% correct across '
+         +   P.sets+' set'+(P.sets>1?"s":"")+'. A 95% Wilson interval on that count is '
+         +   'the range above, mapped through the two anchors in <code>DATA.predict</code>'
+         +   (P.untimedShare>0 ? ', then docked <b class="num" style="color:var(--text)">'+Math.round(DATA.predict.untimed*P.untimedShare)+'</b> points because '
+                                +(P.untimedShare===1?"all":Math.round(P.untimedShare*100)+"% of")
+                                +' the questions were untimed' : '')
+         +   '.</div>';
+      /* the narrowing — shown, not claimed */
+      ph += '<div class="tiny" style="color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-size:10px;margin-bottom:7px">'
+         +   'Band width if this accuracy holds</div>'
+         + '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px">'
+         + [{n:P.n,width:P.width,now:true}].concat(P.proj).map(x=>
+             '<span class="chip" style="'+(x.now?'border-color:var(--warn);color:var(--warn)':'color:var(--dim)')+'">'
+             + (x.now?'now · ':'')+x.n+' q → <b class="num">±'+Math.round(x.width/2)+'</b></span>').join("")
+         + '</div>';
+    });
+    ph += '<div class="hint" style="margin-top:14px">'
+       +  '<b>Read this as a wide guess, not a score.</b> '
+       +  'Untimed sets flatter accuracy, so they are docked up to '+DATA.predict.untimed+' points (<code>DATA.predict.untimed</code>). '
+       +  'Question-bank sets are not adaptive, so their difficulty mix is not a real second module\'s. '
+       +  'And the accuracy→score map is an <b>assumption</b>: nothing public converts domain accuracy to the 200–800 band, so the anchors in <code>DATA.predict</code> are a placeholder. '
+       +  'See <code>docs/projection.md</code> for how every number here is computed.'
+       + '</div>';
+    pc.innerHTML = ph;
+    v.appendChild(pc);
+  }
+
+  v.appendChild(el("div","hint","Solid bar = measured on a real test. Hollow bar = predicted from logged practice. <b>Lever</b> = section weight × distance from 800 — the crude version of “where are the next points.” Say <code>test 1: SEC band 560-610</code> to update, or <code>logged 25/30 SEC timed</code> to add practice."));
+})();
+
+/* ══════════════════ MISSES ══════════════════ */
+(function(){
+  const v = $("#v-err"), E = DATA.errors;
+
+  if(!E.length){
+    v.appendChild(el("h2","sec","Error log"));
+    const c = el("div","card empty");
+    c.innerHTML = '<div class="big">Nothing logged yet.</div>'
+      + '<div class="tiny" style="max-width:520px;margin:0 auto 20px;line-height:1.6">This is the only file in the folder that generates new information. '
+      + 'Everything on this tab — weekly tallies, repeat offenders, the careless alarm — builds itself from the entries.</div>'
+      + '<div class="hint" style="text-align:left;max-width:560px;margin:0 auto">'
+      + 'After a session, just say it out loud in the terminal:<br><br>'
+      + '<code>log a miss: colons, picked B should be C, careless</code><br>'
+      + '<code>3 misses today — 2 comma splice content, 1 modifier misread</code><br><br>'
+      + 'Tags are exactly <b>content</b> · <b>misread</b> · <b>careless</b> · <b>timing</b>. '
+      + 'The tag is the whole point: if <b>careless</b> clears 5 in a week, that is the real problem and no content review fixes it.'
+      + '</div>';
+    v.appendChild(c);
+
+    v.appendChild(el("h2","sec","What each tag means"));
+    const t = el("div","tiles");
+    Object.keys(WHY).forEach(k=>{
+      const tile = el("div","card tile");
+      tile.style.setProperty("--c","var("+WHY[k]+")");
+      tile.innerHTML = '<div class="n num" style="color:var(--faint)">0</div>'
+        + '<div class="k" style="color:var('+WHY[k]+');text-transform:capitalize">'+k+'</div>'
+        + '<div class="d">'+WHYTEXT[k]+'</div>';
+      t.appendChild(tile);
+    });
+    v.appendChild(t);
+    return;
+  }
+
+  /* ---- tiles ---- */
+  const thisWeek = weekOf(TKEY);
+  const byWhy = k => E.filter(e=>e.why===k);
+  v.appendChild(el("h2","sec",E.length+" misses logged"));
+  const tiles = el("div","tiles");
+  Object.keys(WHY).forEach(k=>{
+    const all = byWhy(k), wk = all.filter(e=>weekOf(e.date)===thisWeek).length;
+    /* the README's rule: careless over 5 in ANY week is the real problem.
+       Flag the worst week, not just the current one, so the signal never hides. */
+    let worst = {n:null, c:0};
+    DATA.weeks.forEach(w=>{
+      const c = all.filter(e=>weekOf(e.date)===w.n).length;
+      if(c > worst.c) worst = {n:w.n, c};
+    });
+    const alarm = k==="careless" && worst.c > 5;
+    const now   = alarm && worst.n === thisWeek;
+    const tile = el("div","card tile"+(alarm?" alarm":""));
+    tile.style.setProperty("--c","var("+WHY[k]+")");
+    tile.innerHTML = '<div class="n num">'+all.length+'</div>'
+      + '<div class="k" style="'+(alarm?"":"color:var("+WHY[k]+")")+';text-transform:capitalize">'+k+'</div>'
+      + '<div class="d">'+(wk?wk+" this week · ":"")+Math.round(all.length/E.length*100)+'% of all misses'
+      + (alarm ? '<br><b style="color:var(--bad)">'+worst.c+' in week '+worst.n+(now?"":" (past)")
+                 +'. Over 5 means this is the actual problem — no content review fixes it.</b>' : '')+'</div>';
+    tiles.appendChild(tile);
+  });
+  v.appendChild(tiles);
+
+  /* ---- weekly stacked bars ---- */
+  v.appendChild(el("h2","sec","By week"));
+  const wkCard = el("div","card"); wkCard.style.padding="20px 18px 16px";
+  const perWeek = DATA.weeks.map(w=>{
+    const rows = E.filter(e=>weekOf(e.date)===w.n);
+    return { n:w.n, title:w.title, total:rows.length,
+             by:Object.fromEntries(Object.keys(WHY).map(k=>[k, rows.filter(e=>e.why===k).length])) };
+  });
+  const maxWk = Math.max(...perWeek.map(w=>w.total), 1);
+  let wh = '<div class="wkbars" style="min-height:170px">';
+  perWeek.forEach(w=>{
+    const h = w.total/maxWk*140;
+    wh += '<div class="wkcol">'
+       + '<div class="wkstack" style="height:'+h+'px">'
+       + Object.keys(WHY).map(k=> w.by[k] ? '<span title="'+k+': '+w.by[k]+'" style="height:'+(w.by[k]/w.total*100)+'%;background:var('+WHY[k]+')"></span>' : "").join("")
+       + '</div><div class="wkbase"></div>'
+       + '<div class="cap"><b class="num">'+w.total+'</b>Week '+w.n+'<br><span style="color:var(--faint)">'+esc(w.title)+'</span></div></div>';
+  });
+  wh += '</div><div class="legend" style="margin-top:16px;border-top:1px solid var(--line);padding-top:13px">'
+     + Object.keys(WHY).map(k=>'<span><i style="background:var('+WHY[k]+')"></i>'+k+' <b class="num">'+byWhy(k).length+'</b></span>').join("")
+     + '</div>';
+  wkCard.innerHTML = wh;
+  v.appendChild(wkCard);
+
+  /* ---- repeat offenders ---- */
+  const groups = {};
+  E.forEach(e=>{ const k=(e.rule||"—").trim().toLowerCase(); (groups[k]=groups[k]||{label:e.rule||"—", rows:[]}).rows.push(e); });
+  const ranked = Object.values(groups).sort((a,b)=>b.rows.length-a.rows.length);
+  const repeat = ranked.filter(g=>g.rows.length>=3);
+
+  v.appendChild(el("h2","sec","Repeat offenders <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— 3+ misses, drill these first</span>"));
+  const rc = el("div","card");
+  if(!repeat.length){
+    rc.innerHTML = '<div class="empty tiny">Nothing has been missed three times yet. '
+      + (ranked.length ? 'Closest: <b style="color:var(--text)">'+esc(ranked[0].label)+'</b> at '+ranked[0].rows.length+'.' : '')+'</div>';
+  } else {
+    rc.innerHTML = '<div class="scroll"><table><thead><tr><th>Rule / concept</th><th>Times</th><th>Why it happens</th><th>Last seen</th></tr></thead><tbody>'
+      + repeat.map(g=>{
+          const mix = Object.keys(WHY).map(k=>({k,n:g.rows.filter(r=>r.why===k).length})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+          const last = g.rows.map(r=>r.date).sort().pop();
+          return '<tr><td style="font-weight:580">'+esc(g.label)+'</td>'
+            + '<td><b class="num" style="color:var(--bad);font-size:15px">'+g.rows.length+'</b></td>'
+            + '<td>'+mix.map(m=>'<span class="why" style="background:var('+WHY[m.k]+');margin-right:5px">'+m.k+' '+m.n+'</span>').join("")+'</td>'
+            + '<td class="num muted">'+FMT(last)+'</td></tr>';
+        }).join("") + '</tbody></table></div>';
+  }
+  v.appendChild(rc);
+
+  /* ---- domain heat ---- */
+  const doms = {};
+  E.forEach(e=>{ const k=e.domain||"—"; doms[k]=(doms[k]||0)+1; });
+  const dlist = Object.entries(doms).sort((a,b)=>b[1]-a[1]);
+  const dmax = Math.max(...dlist.map(d=>d[1]),1);
+  v.appendChild(el("h2","sec","By domain"));
+  const dc = el("div","card"); dc.style.padding="18px";
+  dc.innerHTML = '<div class="bars">' + dlist.map(([n,c])=>
+      '<div class="bar"><div class="nm">'+esc(n)+'</div>'
+      + '<div class="tr"><span style="width:'+(c/dmax*100)+'%;background:var(--accent)"></span></div>'
+      + '<div class="vl num">'+c+'</div></div>').join("") + '</div>';
+  v.appendChild(dc);
+
+  /* ---- the log itself ---- */
+  v.appendChild(el("h2","sec","Every miss <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— newest first</span>"));
+  const lc = el("div","card");
+  const sorted = [...E].sort((a,b)=> a.date<b.date?1:a.date>b.date?-1:0);
+  /* Rows carrying an `explanation` get a second, collapsed row underneath holding
+     College Board's verbatim rationale, the question text, and a link back to the bank. */
+  lc.innerHTML = '<div class="scroll"><table><thead><tr><th>Date</th><th>Source</th><th>Domain</th><th>Rule / concept</th><th>Answer</th><th>Why</th></tr></thead><tbody>'
+    + sorted.map(e=>{
+        const head = '<tr><td class="num" style="white-space:nowrap">'+FMT(e.date)+'</td>'
+          + '<td class="muted">'+esc(e.source||"—")+(e.qid?'<div class="tiny num" style="color:var(--faint);margin-top:3px">ID # '+esc(e.qid)+'</div>':'')+'</td>'
+          + '<td>'+esc(e.domain||"—")+'</td>'
+          + '<td style="font-weight:540">'+esc(e.rule||"—")+(e.note?'<div class="tiny muted" style="margin-top:3px">'+esc(e.note)+'</div>':'')+'</td>'
+          + '<td class="ac"><s>'+esc(e.picked||"?")+'</s> → <b>'+esc(e.correct||"?")+'</b></td>'
+          + '<td><span class="why" style="background:var('+(WHY[e.why]||"--dim")+')">'+esc(e.why||"—")+'</span></td></tr>';
+        if(!e.explanation) return head;
+        const ch = (e.choices||[]).map(c=>{
+          const right = e.correct && c.trim().indexOf(e.correct+")")===0;
+          return '<li style="margin:0 0 3px;'+(right?'font-weight:640;color:var(--ok)':'color:var(--dim)')+'">'
+               + esc(c)+(right?' ✓':'')+'</li>';
+        }).join("");
+        return head
+          + '<tr><td colspan="6" style="padding:0 14px 12px">'
+          + '<details style="font-size:12.5px;line-height:1.65">'
+          + '<summary style="cursor:pointer;color:var(--accent);font-weight:560;padding:2px 0">'
+          +   'College Board explanation</summary>'
+          + '<div style="border-left:2px solid var(--line);padding:8px 0 2px 13px;margin-top:7px">'
+          +   (e.stem?'<p style="margin:0 0 9px;color:var(--text)">'+esc(e.stem)+'</p>':'')
+          +   (ch?'<ul style="list-style:none;padding:0;margin:0 0 10px">'+ch+'</ul>':'')
+          +   '<p style="margin:0 0 9px;color:var(--dim)">'+esc(e.explanation)+'</p>'
+          +   (e.link?'<a href="'+esc(e.link)+'" target="_blank" rel="noopener" style="color:var(--accent)">'
+                     +'SAT Suite Question Bank ↗</a>'
+                     +'<span class="tiny muted"> — filter to SAT, then this question’s section and domain, '
+                     +'and match ID # '+esc(e.qid||"")+'. The bank has no per-question URL.</span>':'')
+          + '</div></details></td></tr>';
+      }).join("")
+    + '</tbody></table></div>';
+  v.appendChild(lc);
+})();
+
+/* ══════════════════ TOPICS ══════════════════ */
+(function(){
+  const v = $("#v-top");
+
+  /* how many logged misses match each rule's tags */
+  const hits = r => DATA.errors.filter(e=>{
+    const s = ((e.rule||"")+" "+(e.note||"")).toLowerCase();
+    return r.tags.some(t=>s.includes(t));
+  }).length;
+
+  const scored = DATA.rules.map(r=>({...r, hits:hits(r)}));
+  const hot = scored.filter(r=>r.hits>0).sort((a,b)=>b.hits-a.hits);
+
+  v.appendChild(el("h2","sec","Standard English Conventions <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— 26% of RW, 11–15 questions, currently the "+bandNow("SEC")+" band</span>"));
+
+  const goal = el("div","card"); goal.style.cssText="padding:15px 18px;margin-bottom:14px";
+  goal.innerHTML = '<div class="lab" style="margin-bottom:6px">The target</div>'
+    + '<div style="font-size:14.5px;line-height:1.55">Name the rule being tested <b>before</b> looking at the answer choices. '
+    + 'Every SEC question on the test reduces to one of the eight below.</div>';
+  v.appendChild(goal);
+
+  if(hot.length){
+    const hs = el("div","card"); hs.style.cssText="padding:15px 18px;margin-bottom:14px;border-color:var(--bad)";
+    hs.innerHTML = '<div class="lab" style="color:var(--bad);margin-bottom:9px">Your weak spots, from the error log</div>'
+      + '<div class="bars">' + hot.map(r=>
+          '<div class="bar"><div class="nm">Rule '+r.n+' · '+esc(r.title.split(" ").slice(0,3).join(" "))+'</div>'
+          + '<div class="tr"><span style="width:'+(r.hits/hot[0].hits*100)+'%;background:var(--bad)"></span></div>'
+          + '<div class="vl num">'+r.hits+'</div></div>').join("") + '</div>';
+    v.appendChild(hs);
+  }
+
+  const g = el("div","rules");
+  scored.forEach(r=>{
+    const d = el("details","card rule");
+    if(r.hits>=3) d.open = true;
+    d.innerHTML = '<summary><span class="n">'+r.n+'</span><span class="t">'+esc(r.title)+'</span>'
+      + (r.hits?'<span class="cnt num">'+r.hits+' missed</span>':'')+'</summary>'
+      + '<div class="body">'+r.body+'</div>';
+    g.appendChild(d);
+  });
+  v.appendChild(g);
+
+  v.appendChild(el("h2","sec","Two near-rules"));
+  const g2 = el("div","rules");
+  DATA.nearRules.forEach(r=>{
+    const d = el("details","card rule"); d.open = true;
+    d.innerHTML = '<summary><span class="n">!</span><span class="t">'+r.title+'</span></summary>'
+      + '<div class="body">'+r.body+'</div>';
+    g2.appendChild(d);
+  });
+  v.appendChild(g2);
+
+  v.appendChild(el("h2","sec","Transitions <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— technically Expression of Ideas, tested the same way</span>"));
+  const tc = el("div","card");
+  tc.innerHTML = '<div class="scroll"><table><thead><tr><th style="width:150px">Relationship</th><th>Words</th></tr></thead><tbody>'
+    + DATA.transitions.map(t=>'<tr><td style="font-weight:600">'+esc(t.rel)+'</td><td class="muted">'+esc(t.words)+'</td></tr>').join("")
+    + '</tbody></table></div>';
+  v.appendChild(tc);
+  v.appendChild(el("div","hint","<b>Method:</b> cover the transition word entirely. Read the sentence before and the sentence after. Decide the relationship <i>yourself</i>, then pick the word. The trap is a contrast word where the two sentences actually agree."));
+
+  v.appendChild(el("h2","sec","Test-day timing"));
+  const tm = el("div","tiles");
+  [
+    {n:"71 s", k:"RW per question", d:"27 questions, 32 min per module. But SEC should take 30–40 s — it is rule application, not reading. The seconds you save there buy the long inference questions at the end.", c:"--accent"},
+    {n:"95 s", k:"Math per question", d:"22 questions, 35 min per module. Flag anything past 2 min and move. Reserve the last 3 min to recheck flags, not to attempt new questions.", c:"--ok"},
+    {n:"M1", k:"The module that matters", d:"Module 1 performance sets module 2 difficulty, which sets your score ceiling. Do not rush module 1 to bank time.", c:"--warn"},
+    {n:"0", k:"Blanks allowed", d:"No penalty for wrong answers. Guess on everything. On RW, two of four choices are usually eliminable mechanically.", c:"--test"}
+  ].forEach(x=>{
+    const t = el("div","card tile");
+    t.style.setProperty("--c","var("+x.c+")");
+    t.innerHTML = '<div class="n num" style="color:var('+x.c+')">'+x.n+'</div><div class="k">'+x.k+'</div><div class="d">'+x.d+'</div>';
+    tm.appendChild(t);
+  });
+  v.appendChild(tm);
+})();
+
+/* ══════════════════ VOCAB ══════════════════ */
+(function(){
+  const v = $("#v-voc");
+
+  v.appendChild(el("h2","sec","Words in context <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— Craft and Structure is 28% of RW, currently "+bandNow("CAS")+"</span>"));
+
+  const method = el("div","card"); method.style.cssText="padding:15px 18px;margin-bottom:14px";
+  method.innerHTML = '<div class="lab" style="margin-bottom:8px">The method</div>'
+    + '<ol style="margin:0;padding-left:19px;font-size:13.5px;line-height:1.75;color:var(--dim)">'
+    + '<li>Cover the answer choices.</li><li>Read the sentence and the one before it.</li>'
+    + '<li>Say what word <b style="color:var(--text)">you</b> would put in the blank.</li>'
+    + '<li>Uncover. Pick the closest match.</li></ol>'
+    + '<div class="tiny" style="margin-top:10px;color:var(--faint)">If your prediction matches nothing, you misread the sentence’s logic. Reread rather than guessing among four unfamiliar words.</div>';
+  v.appendChild(method);
+
+  const search = el("input","searchbar");
+  search.type = "search";
+  search.placeholder = "Filter words…";
+  v.appendChild(search);
+
+  v.appendChild(el("h2","sec","Secondary meanings <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— click to reveal. The SAT tests common words used precisely, not obscure ones.</span>"));
+  const sg = el("div","vgrid"); v.appendChild(sg);
+
+  const mine = el("div"); v.appendChild(el("h2","sec","My words <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— add a word when you did not know it, or knew it and the SAT used a second meaning</span>"));
+  v.appendChild(mine);
+
+  function draw(q){
+    q = (q||"").trim().toLowerCase();
+    sg.innerHTML = "";
+    DATA.secondary
+      .filter(w => !q || (w.word+" "+w.sat+" "+w.everyday).toLowerCase().includes(q))
+      .sort((a,b)=>(b.missed||0)-(a.missed||0))
+      .forEach(w=>{
+        const c = el("div","card vc");
+        const face = () => '<div class="w">'+esc(w.word)+'</div>'
+          + '<div class="ev">everyday: '+esc(w.everyday)+'</div>'
+          + (w.missed?'<div class="miss num">×'+w.missed+'</div>':'')
+          + (c.classList.contains("flip")
+              ? '<div class="sat"><span class="k">SAT meaning</span>'+esc(w.sat)+'</div>'
+              : '<div class="veil">tap for the SAT meaning</div>');
+        c.innerHTML = face();
+        c.onclick = ()=>{ c.classList.toggle("flip"); c.innerHTML = face(); };
+        sg.appendChild(c);
+      });
+
+    const list = DATA.vocab.filter(w => !q || (w.word+" "+(w.mine||"")).toLowerCase().includes(q));
+    if(!list.length){
+      mine.innerHTML = '<div class="card empty">'
+        + '<div class="big">'+(DATA.vocab.length ? "No match." : "No words yet.")+'</div>'
+        + (DATA.vocab.length ? '' : '<div class="hint" style="text-align:left;max-width:520px;margin:16px auto 0">'
+            + 'After a words-in-context set, say:<br><br><code>add vocab: tenuous — thin, barely holding together</code><br><br>'
+            + 'Write the definition in your own words. A copied dictionary line does not stick.</div>')
+        + '</div>';
+    } else {
+      mine.innerHTML = '<div class="card"><div class="scroll"><table><thead><tr><th style="width:170px">Word</th><th>My definition</th><th style="width:190px">Where</th><th style="width:70px">Missed</th></tr></thead><tbody>'
+        + list.sort((a,b)=>(b.missed||0)-(a.missed||0)).map(w=>
+            '<tr><td style="font-weight:620;font-size:14px">'+esc(w.word)+'</td>'
+            + '<td>'+esc(w.mine||"—")+'</td><td class="muted tiny">'+esc(w.where||"—")+'</td>'
+            + '<td>'+((w.missed||0) ? '<b class="num" style="color:var(--bad)">'+w.missed+'</b>' : '<span class="muted">—</span>')+'</td></tr>').join("")
+        + '</tbody></table></div></div>';
+    }
+  }
+  search.oninput = () => draw(search.value);
+  draw("");
+})();
+
+/* ─────────── theme toggle ─────────── */
+(function(){
+  const root = document.documentElement;
+  let saved = null;
+  try{ saved = localStorage.getItem("sat-theme"); }catch(e){}
+  if(saved) root.setAttribute("data-theme", saved);
+  $("#theme").onclick = ()=>{
+    const dark = matchMedia("(prefers-color-scheme:dark)").matches;
+    const now  = root.getAttribute("data-theme") || (dark ? "dark" : "light");
+    const next = now === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try{ localStorage.setItem("sat-theme", next); }catch(e){}
+  };
+})();
+</script>
+</body>
+</html>
