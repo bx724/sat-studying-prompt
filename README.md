@@ -5,8 +5,8 @@ This repository contains the prompt and instructions to allow you to create your
 The prompt turns an AI coding agent such as [Claude Code](https://claude.com/claude-code) or [Codex](https://openai.com/codex/) into a study system for the digital SAT. It plans your schedule, keeps an error log of every question you miss, builds practice sets from the official College Board question bank, and keeps a dashboard up to date with a projected score.
 
 
-**See it first:** download [`dashboard.html`](dashboard.html) and open it in your browser. It's a sample dashboard filled with a made-up student's data, so you can see what you'll get before you start.
-
+**See it first:** download [`sampleDashboard.html`](sampleDashboard.html) and open it in your browser. It's a sample dashboard filled with a made-up student's data, so you can see what you'll get before you start.
+**If you do not like the dashboard your code agent makes, you could optionally feed it sampleDashboard.html and ask it to recreate the design 
 ## How to use it
 
 You don't need to clone this repo. Everything is in one file.
