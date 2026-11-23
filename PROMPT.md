@@ -120,10 +120,10 @@ Then:
 
 ### dashboard.html
 
-The dashboard comes from a fixed template, so every student gets the same tested design: the sample at https://github.com/bx724/sat-studying-prompt/blob/main/dashboard.html. **Don't design, restyle or write render code yourself.** Your only job is to fill in `DATA`. The page is one self-contained HTML file with no external files and no network calls, and it works when opened directly from disk.
+The dashboard comes from a fixed template, so every student gets the same tested design: the sample at https://github.com/bx724/sat-studying-prompt/blob/main/sampleDashboard.html. **Don't design, restyle or write render code yourself.** Your only job is to fill in `DATA`. The page is one self-contained HTML file with no external files and no network calls, and it works when opened directly from disk.
 
 **Setup (once):**
-1. Download the template from `https://raw.githubusercontent.com/bx724/sat-studying-prompt/main/dashboard.html` to `bank/dashboard-template.html`, for example `curl -fsSL --create-dirs <url> -o bank/dashboard-template.html`. Never edit this copy.
+1. Download the template from `https://raw.githubusercontent.com/bx724/sat-studying-prompt/main/sampleDashboard.html` to `bank/dashboard-template.html`, for example `curl -fsSL --create-dirs <url> -o bank/dashboard-template.html`. Never edit this copy.
 2. Copy it to `dashboard.html`.
 3. In `dashboard.html`, replace everything between the two marker lines below with this student's `const DATA = { ... };`. That includes the sample student's made-up data and its `day()` helper. Keep both marker lines exactly as they are.
    ```
