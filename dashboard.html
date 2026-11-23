@@ -293,22 +293,20 @@ tbody tr:hover{background:var(--surface2)}
 <body>
 
 <script>
-/* ══════════════════════════════════════════════════════════════════════════
-   EDIT ZONE — everything below is data. Nothing else in this file needs
-   touching. Just tell your coding agent what happened; e.g.
+/* ===== DATA START: the agent edits only between these markers ===== */
+/* Everything between the DATA START and DATA END markers is data. Nothing
+   else in this file is ever edited. Tell your coding agent what happened, e.g.
 
-     "log a miss: colons, picked B should be C, careless, from SEC drill"
+     "Set F answers: 1 B, 2 C, 3 A, ..."
      "mark Saturday done"
      "practice test 2: RW 660, Math 670"
      "add vocab: tenuous — weak, barely holding together"
 
-   Categories for `why` are exactly: content | misread | careless | timing
-
    THIS IS SAMPLE DATA for a made-up student. Every score, miss and word is
    invented. The dates use day(n), days from the plan's first Saturday, so
    the demo always looks mid-plan whenever it is opened. A real study folder
-   replaces this whole block and uses plain "YYYY-MM-DD" strings instead.
-   ══════════════════════════════════════════════════════════════════════════ */
+   replaces everything between the markers with its own `const DATA = {...};`
+   and uses plain "YYYY-MM-DD" strings instead of day(n). */
 
 const day = (()=>{
   const t = new Date(); t.setHours(0,0,0,0);
@@ -402,8 +400,8 @@ weeks: [
 
 /* ── the gates. A checkpoint reads the test taken on it or the day before */
 checkpoints: [
-  { date:day(9),  metric:"RW on practice #2", threshold:650, extra:"" },
-  { date:day(22), metric:"RW on practice #3", threshold:680, extra:"Under 650 → drop to 1350 and consolidate" }
+  { date:day(9),  metric:"RW on practice #2", section:"rw", threshold:650, extra:"" },
+  { date:day(22), metric:"RW on practice #3", section:"rw", threshold:680, extra:"Under 650 → drop to 1350 and consolidate" }
 ],
 
 /* ══ PRACTICE SETS ══ raw accuracy from drills. NOT full tests — these feed
@@ -538,7 +536,7 @@ transitions: [
 ]
 
 };
-/* ═══════════════════════════ END EDIT ZONE ══════════════════════════════ */
+/* ===== DATA END: render code below reads only DATA; never edit it ===== */
 </script>
 
 <header>
@@ -585,6 +583,12 @@ const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&g
 const TODAY = (()=>{ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); })();
 const TKEY = KEY(TODAY);
 
+/* optional lists may be left out of DATA; the views that use them then hide */
+["scores","practice","errors","vocab","rules","secondary","nearRules","transitions","checkpoints","weeks"]
+  .forEach(k => { if(!Array.isArray(DATA[k])) DATA[k] = []; });
+const ALLDOMS = [...DATA.domains.rw, ...DATA.domains.math];
+const domW = code => { const d = ALLDOMS.find(x=>x.code===code); return d ? d.weight : null; };
+
 const ALLDAYS = DATA.weeks.flatMap(w => w.days.map(d => ({...d, week:w.n})));
 const WHY = { content:"--c-content", misread:"--c-misread", careless:"--c-careless", timing:"--c-timing" };
 const WHYTEXT = {
@@ -619,8 +623,8 @@ function wilson(k, n, z){
    "what does only the evidence since the last test say?" */
 /* the latest measured band for a domain, as "lo–hi" */
 function bandNow(code){
-  const d = [...DATA.domains.rw, ...DATA.domains.math].find(x=>x.code===code);
-  const b = d && [...d.bands].reverse().find(x=>x);
+  const d = ALLDOMS.find(x=>x.code===code);
+  const b = d && [...(d.bands||[])].reverse().find(x=>x);
   return b ? b[0]+"–"+b[1] : "unmeasured";
 }
 function predictFor(code, sets){
@@ -661,7 +665,7 @@ function predictFor(code, sets){
      · drift            — uncertainty that grows the longer it has been since
                           anything was measured
    Confidence is that half-width read against `confRef`. A full test resets
-   it; logged practice and elapsed time both lower it. See docs/projection.md ══ */
+   it; logged practice and elapsed time both lower it. See the Projection section of CLAUDE.md ══ */
 const PROJ = (()=>{
   const P = DATA.predict;
   if(!P) return null;
@@ -677,8 +681,8 @@ const PROJ = (()=>{
       /* the band this domain had on that same test — the thing fresh
          evidence is measured against */
       let ref = null;
-      for(let i=Math.min(li, d.bands.length-1); i>=0; i--) if(d.bands[i]){ ref = d.bands[i]; break; }
-      if(!ref) return;
+      for(let i=Math.min(li, (d.bands||[]).length-1); i>=0; i--) if(d.bands[i]){ ref = d.bands[i]; break; }
+      if(!ref) ref = [measured, measured];
       const sets = (DATA.practice||[]).filter(x=>x.domain===d.code && x.date > base.date);
       if(!sets.length) return;
       const est = predictFor(d.code, sets);
@@ -710,6 +714,15 @@ const PROJ = (()=>{
     moved: rw.moved.concat(math.moved)
   };
 })();
+
+/* the practice that counts: rows dated after the projection's anchor test */
+const sinceAnchor = code => (DATA.practice||[]).filter(x=>x.domain===code && (!PROJ || x.date > PROJ.base.date));
+/* the band a domain had on the anchor test (or the latest one before it) */
+function anchorBand(d){
+  const li = PROJ ? DATA.scores.indexOf(PROJ.base) : DATA.scores.length-1;
+  for(let i=Math.min(li, (d.bands||[]).length-1); i>=0; i--) if(d.bands[i]) return {band:d.bands[i], i};
+  return null;
+}
 
 /* ─────────── header ─────────── */
 const testD = D(DATA.meta.testDate);
@@ -783,10 +796,17 @@ if(PROJ){
 
 /* ─────────── score gap panel ─────────── */
 (function(){
-  const box = $("#gapcard"), b = DATA.meta.baseline;
-  const rwNeed = DATA.meta.target - latest.math, rwMove = rwNeed - latest.rw;
-  const total = DATA.meta.target, floor = 1000, span = total - floor;
-  const rwPct = Math.max(0,(latest.rw - floor/2))/span*100;
+  const box = $("#gapcard");
+  const total = DATA.meta.target;
+  /* hold the stronger section; the weaker one has to carry the gap */
+  const holdMath = latest.math >= latest.rw;
+  const S = { rw:{name:"Reading and Writing", short:"RW", v:latest.rw}, math:{name:"Math", short:"Math", v:latest.math} };
+  const held = holdMath ? S.math : S.rw, mover = holdMath ? S.rw : S.math;
+  const need = total - held.v, mv = need - mover.v;
+  const atTarget = latest.rw + latest.math >= total;
+  const tail = (sec) => (sec===mover && !atTarget)
+    ? ' <span style="color:var(--bad);font-weight:600">→ '+need+' ('+(mv>=0?'+':'')+mv+')</span>'
+    : ' <span style="color:var(--ok);font-weight:600">→ hold</span>';
   const seg = (v,c) => '<span style="width:'+Math.max(0,Math.min(100, v/total*100))+'%;background:'+c+'"></span>';
   box.innerHTML =
     '<div class="head"><span class="lab">Where the points are</span>'
@@ -797,10 +817,13 @@ if(PROJ){
     +   '<span style="flex:1;background:repeating-linear-gradient(45deg,var(--rail),var(--rail) 4px,var(--line2) 4px,var(--line2) 5px)"></span>'
     + '</div>'
     + '<div class="legend">'
-    +   '<span><i style="background:var(--accent)"></i>RW <b class="num">'+latest.rw+'</b> <span style="color:var(--bad);font-weight:600">→ '+rwNeed+' ('+(rwMove>=0?'+':'')+rwMove+')</span></span>'
-    +   '<span><i style="background:var(--ok)"></i>Math <b class="num">'+latest.math+'</b> <span style="color:var(--ok);font-weight:600">→ hold</span></span>'
+    +   '<span><i style="background:var(--accent)"></i>RW <b class="num">'+latest.rw+'</b>'+tail(S.rw)+'</span>'
+    +   '<span><i style="background:var(--ok)"></i>Math <b class="num">'+latest.math+'</b>'+tail(S.math)+'</span>'
     + '</div>'
-    + '<div class="tiny muted" style="margin-top:11px;line-height:1.5">With Math held at '+latest.math+', Reading and Writing has to move about <b style="color:var(--text)">'+(rwMove>=0?'+':'')+rwMove+'</b> to reach '+total+'. '
+    + '<div class="tiny muted" style="margin-top:11px;line-height:1.5">'
+    + (atTarget
+        ? 'The last full test already reaches '+total+'. The job now is to <b style="color:var(--text)">hold both sections</b>. '
+        : 'With '+held.name+' held at '+held.v+', '+mover.name+' has to move about <b style="color:var(--text)">'+(mv>=0?'+':'')+mv+'</b> to reach '+total+'. ')
     + '<span style="color:var(--faint)">Source: '+esc(latest.label)+', '+FMT(latest.date)+'.</span></div>'
     + (PROJ ? '<div class="tiny muted" style="margin-top:9px;line-height:1.6;border-top:1px solid var(--line);padding-top:10px">'
         + '<b style="color:var(--warn)">Projected '+PROJ.total+'</b> '
@@ -862,7 +885,10 @@ function HM(m){
 
   const head = el("div","calhead");
   head.appendChild(el("div",null,""));
-  Array.from({length:7},(_,i)=>DOW[(D(DATA.weeks[0].days[0].date).getDay()+i)%7]).forEach(x=>head.appendChild(el("div",null,x)));
+  /* columns follow the plan's full weeks, so a short first or last week lines up under them */
+  const fullWk = DATA.weeks.find(w=>w.days.length===7) || DATA.weeks[0];
+  const startDow = fullWk ? D(fullWk.days[0].date).getDay() : 6;
+  Array.from({length:7},(_,i)=>DOW[(startDow+i)%7]).forEach(x=>head.appendChild(el("div",null,x)));
   v.appendChild(head);
 
   const detail = el("div","card detail");
@@ -870,7 +896,9 @@ function HM(m){
 
   DATA.weeks.forEach(w=>{
     const row = el("div","week");
-    row.appendChild(el("div","wlabel","<b>Week "+w.n+"</b><span>"+esc(w.title)+"</span>"));
+    const wl = el("div","wlabel","<b>Week "+w.n+"</b><span>"+esc(w.title)+"</span>");
+    wl.style.gridColumn = "1";
+    row.appendChild(wl);
     w.days.forEach(d=>{
       const dt = D(d.date), past = dt < TODAY, isToday = d.date===TKEY;
       const b = el("button","day t-"+d.type+(d.done?" done":"")+(past?" past":"")+(isToday?" today":""));
@@ -879,6 +907,7 @@ function HM(m){
         + (d.flag ? '<span class="flag">'+esc(d.flag)+'</span>' : '')
         + '<p>'+esc(d.task)+'</p>'
         + '<div class="mins">'+HM(d.mins).toUpperCase()+'</div>';
+      b.style.gridColumn = String((dt.getDay()-startDow+7)%7 + 2);
       b.onclick = ()=>{
         document.querySelectorAll(".day.sel").forEach(x=>x.classList.remove("sel"));
         b.classList.add("sel");
@@ -886,7 +915,7 @@ function HM(m){
         detail.hidden = false;
         detail.innerHTML =
           '<h3>'+DOW[dt.getDay()]+", "+MON[dt.getMonth()]+" "+dt.getDate()+", "+dt.getFullYear()+"</h3>"
-          + '<div class="sub">Week '+w.n+" · "+esc(w.title)+" · "+esc(w.note)+'</div>'
+          + '<div class="sub">Week '+w.n+" · "+esc(w.title)+(w.note?" · "+esc(w.note):"")+'</div>'
           + '<p>'+esc(d.task)+'</p>'
           + '<div class="chips">'
           +   '<span class="chip" style="color:var(--text)">'+HM(d.mins)+'</span>'
@@ -914,13 +943,14 @@ function HM(m){
   v.appendChild(el("h2","sec","Checkpoints"));
   const cp = el("div","card");
   /* a checkpoint reads the test taken on it or the day before — never a later one */
-  const scoreFor = date => {
+  const scoreFor = (date, sec) => {
     const s = DATA.scores.find(x=>{ const g = DAYS(D(x.date), D(date)); return g>=0 && g<=1; });
-    return s && s.rw!=null ? s.rw : null;
+    if(!s || s.rw==null || s.math==null) return null;
+    return sec==="rw" ? s.rw : sec==="math" ? s.math : s.rw + s.math;
   };
   cp.innerHTML = '<div class="scroll"><table><thead><tr><th>Date</th><th>Metric</th><th>Threshold</th><th>Actual</th><th>Then what</th></tr></thead><tbody>'
     + DATA.checkpoints.map(c=>{
-        const got = scoreFor(c.date);
+        const got = scoreFor(c.date, c.section);
         const pass = got==null ? null : got >= c.threshold;
         const st = got==null
           ? '<span class="muted">—</span>'
@@ -929,6 +959,7 @@ function HM(m){
              + '<td class="num" style="font-weight:620">'+c.threshold+'+</td><td>'+st+'</td>'
              + '<td class="muted">'+esc(c.extra||"—")+'</td></tr>';
       }).join("")
+    + (DATA.checkpoints.length ? '' : '<tr><td colspan="5" class="muted">No checkpoints yet.</td></tr>')
     + '</tbody></table></div>';
   v.appendChild(cp);
 
@@ -946,37 +977,37 @@ function HM(m){
 
   function bandGroup(title, list){
     const withLever = list.map(d=>{
-      const b = [...d.bands].reverse().find(x=>x) || d.bands[0];
-      const mid = (b[0]+b[1])/2;
-      return {...d, cur:b, mid, lever: d.weight*(800-mid)};
+      const b = [...(d.bands||[])].reverse().find(x=>x) || null;
+      const mid = b ? (b[0]+b[1])/2 : null;
+      return {...d, cur:b, mid, lever: b ? d.weight*(800-mid) : -1};
     });
     let topIdx = 0;
     withLever.forEach((x,i)=>{ if(x.lever > withLever[topIdx].lever) topIdx = i; });
     let h = '<div class="lab" style="padding:16px 0 6px">'+title+'</div>';
     withLever.forEach((d,i)=>{
-      const [lo,hi] = d.cur;
-      const l = (lo-200)/600*100, wd = Math.max(3,(hi-lo)/600*100);
-      const cls = hi<=600 ? "weak" : lo>=680 ? "strong" : "";
+      const [lo,hi] = d.cur || [null,null];
+      const l = d.cur ? (lo-200)/600*100 : 0, wd = d.cur ? Math.max(3,(hi-lo)/600*100) : 0;
+      const cls = !d.cur ? "" : hi<=600 ? "weak" : lo>=680 ? "strong" : "";
       /* only badge a real lever: the top one, and only if it is not already strong */
-      const isTop = i===topIdx && cls!=="strong";
+      const isTop = i===topIdx && d.cur && cls!=="strong";
       /* a domain with logged practice gets a second, hollow bar underneath the
          measured one — estimate and measurement never share a visual weight */
-      const P = predictFor(d.code);
+      const P = predictFor(d.code, sinceAnchor(d.code));
       const pl = P ? (P.lo-200)/600*100 : 0, pw = P ? Math.max(3,(P.hi-P.lo)/600*100) : 0;
       h += '<div class="band">'
         + '<div class="nm"><b>'+esc(d.name)+(isTop?' <span style="color:var(--bad);font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap">◄ BIGGEST LEVER</span>':'')+'</b>'
-        + '<span>'+d.weight+'% of section</span></div>'
+        + '<span>'+d.weight+'% of section'+(P?'':' · not projected')+'</span></div>'
         + '<div class="scale">'
-        +   '<div class="rng '+cls+'" style="left:'+l+'%;width:'+wd+'%'+(P?';top:0;bottom:11px':'')+'"></div>'
+        +   (d.cur ? '<div class="rng '+cls+'" style="left:'+l+'%;width:'+wd+'%'+(P?';top:0;bottom:11px':'')+'"></div>' : '')
         +   (P ? '<div title="predicted from '+P.n+' practice questions" style="position:absolute;bottom:1px;height:9px;'
                  +'left:'+pl+'%;width:'+pw+'%;border:1px dashed var(--warn);border-radius:3px;'
                  +'background:color-mix(in srgb, var(--warn) 18%, transparent)"></div>'
                + '<div style="position:absolute;bottom:1px;height:9px;width:2px;left:'+((P.mid-200)/600*100)+'%;background:var(--warn)"></div>'
              : '')
         + '</div>'
-        + '<div class="txt num">'+lo+'–'+hi+'<em>'+(P
+        + '<div class="txt num">'+(d.cur ? lo+'–'+hi : '<span style="color:var(--faint)">—</span>')+'<em>'+(P
               ? '<span style="color:var(--warn)">'+P.lo+'–'+P.hi+' est</span>'
-              : (hi<=600?"weak":lo>=680?"strong":"mid"))+'</em></div>'
+              : !d.cur ? "not measured" : (hi<=600?"weak":lo>=680?"strong":"mid"))+'</em></div>'
         + '</div>';
     });
     return h;
@@ -988,20 +1019,24 @@ function HM(m){
   v.appendChild(bandBox);
 
   /* ── the estimate, with its own assumptions on the face of it ───────── */
-  const predicted = [...DATA.domains.rw, ...DATA.domains.math]
-        .map(d=>({d, P:predictFor(d.code)})).filter(x=>x.P);
+  const predicted = ALLDOMS
+        .map(d=>({d, P:predictFor(d.code, sinceAnchor(d.code))})).filter(x=>x.P);
   if(predicted.length){
-    v.appendChild(el("h2","sec","Predicted from practice <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— an estimate, not a score</span>"));
+    v.appendChild(el("h2","sec","Predicted from practice <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— since "+esc(PROJ?PROJ.base.label:"the last test")+". An estimate, not a score</span>"));
     const pc = el("div","card"); pc.style.padding = "16px 18px 14px";
     let ph = "";
     predicted.forEach(({d,P})=>{
-      const meas = [...d.bands].reverse().find(x=>x) || d.bands[0];
-      const move = P.mid - (meas[0]+meas[1])/2;
+      const ab = anchorBand(d);
+      const sec = DATA.domains.rw.includes(d) ? "rw" : "math";
+      const meas = ab ? ab.band : null;
+      const ref = meas ? (meas[0]+meas[1])/2 : (PROJ ? PROJ.base[sec] : P.mid);
+      const move = P.mid - ref;
       ph += '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 16px;margin-bottom:11px">'
          +   '<b style="font-size:13px;font-weight:580">'+esc(d.name)+'</b>'
          +   '<span class="num" style="font-size:23px;font-weight:680;color:var(--warn);letter-spacing:-.02em">'+P.lo+'–'+P.hi+'</span>'
          +   '<span class="tiny muted">midpoint <b class="num" style="color:var(--text)">'+P.mid+'</b>'
-         +     ' · measured '+meas[0]+'–'+meas[1]+' on '+FMT((DATA.scores[d.bands.indexOf(meas)]||DATA.scores[0]).date)
+         +     (meas ? ' · measured '+meas[0]+'–'+meas[1]+' on '+FMT(DATA.scores[ab.i].date)
+                     : ' · no band measured; compared with the section score '+Math.round(ref))
          +     ' · <span style="color:var('+(move>0?"--ok":"--bad")+')">'+(move>0?"+":"")+Math.round(move)+'</span></span>'
          + '</div>'
          + '<div class="tiny muted" style="line-height:1.75;margin-bottom:13px">'
@@ -1026,7 +1061,7 @@ function HM(m){
        +  'Untimed sets flatter accuracy, so they are docked up to '+DATA.predict.untimed+' points (<code>DATA.predict.untimed</code>). '
        +  'Question-bank sets are not adaptive, so their difficulty mix is not a real second module\'s. '
        +  'And the accuracy→score map is an <b>assumption</b>: nothing public converts domain accuracy to the 200–800 band, so the anchors in <code>DATA.predict</code> are a placeholder. '
-       +  'See <code>docs/projection.md</code> for how every number here is computed.'
+       +  'The Projection section of <code>CLAUDE.md</code> shows how every number here is computed.'
        + '</div>';
     pc.innerHTML = ph;
     v.appendChild(pc);
@@ -1104,7 +1139,7 @@ function HM(m){
              by:Object.fromEntries(Object.keys(WHY).map(k=>[k, rows.filter(e=>e.why===k).length])) };
   });
   const maxWk = Math.max(...perWeek.map(w=>w.total), 1);
-  let wh = '<div class="wkbars" style="min-height:170px">';
+  let wh = '<div class="wkbars" style="min-height:170px;grid-template-columns:repeat('+Math.max(1,DATA.weeks.length)+',minmax(0,1fr));gap:'+(DATA.weeks.length>8?8:14)+'px">';
   perWeek.forEach(w=>{
     const h = w.total/maxWk*140;
     wh += '<div class="wkcol">'
@@ -1167,7 +1202,10 @@ function HM(m){
         const head = '<tr><td class="num" style="white-space:nowrap">'+FMT(e.date)+'</td>'
           + '<td class="muted">'+esc(e.source||"—")+(e.qid?'<div class="tiny num" style="color:var(--faint);margin-top:3px">ID # '+esc(e.qid)+'</div>':'')+'</td>'
           + '<td>'+esc(e.domain||"—")+'</td>'
-          + '<td style="font-weight:540">'+esc(e.rule||"—")+(e.note?'<div class="tiny muted" style="margin-top:3px">'+esc(e.note)+'</div>':'')+'</td>'
+          + '<td style="font-weight:540">'+esc(e.rule||"—")+(function(){
+              const sub = e.note || [e.skill, e.difficulty, e.redone ? "redone "+e.redone : ""].filter(Boolean).join(" · ");
+              return sub ? '<div class="tiny muted" style="margin-top:3px">'+esc(sub)+'</div>' : '';
+            })()+'</td>'
           + '<td class="ac"><s>'+esc(e.picked||"?")+'</s> → <b>'+esc(e.correct||"?")+'</b></td>'
           + '<td><span class="why" style="background:var('+(WHY[e.why]||"--dim")+')">'+esc(e.why||"—")+'</span></td></tr>';
         if(!e.explanation) return head;
@@ -1208,12 +1246,12 @@ function HM(m){
   const scored = DATA.rules.map(r=>({...r, hits:hits(r)}));
   const hot = scored.filter(r=>r.hits>0).sort((a,b)=>b.hits-a.hits);
 
-  v.appendChild(el("h2","sec","Standard English Conventions <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— 26% of RW, 11–15 questions, currently the "+bandNow("SEC")+" band</span>"));
+  v.appendChild(el("h2","sec","Standard English Conventions <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— "+(domW("SEC")!=null?domW("SEC")+"% of RW, ":"")+"currently "+(bandNow("SEC")==="unmeasured"?"unmeasured":"the "+bandNow("SEC")+" band")+"</span>"));
 
   const goal = el("div","card"); goal.style.cssText="padding:15px 18px;margin-bottom:14px";
   goal.innerHTML = '<div class="lab" style="margin-bottom:6px">The target</div>'
     + '<div style="font-size:14.5px;line-height:1.55">Name the rule being tested <b>before</b> looking at the answer choices. '
-    + 'Every SEC question on the test reduces to one of the eight below.</div>';
+    + (DATA.rules.length ? 'Every SEC question on the test reduces to one of the '+DATA.rules.length+' below.' : 'The rules fill in here from <code>03-grammar-rules.md</code> as you learn them.')+'</div>';
   v.appendChild(goal);
 
   if(hot.length){
@@ -1237,7 +1275,7 @@ function HM(m){
   });
   v.appendChild(g);
 
-  v.appendChild(el("h2","sec","Two near-rules"));
+  if(DATA.nearRules.length) v.appendChild(el("h2","sec","Near-rules"));
   const g2 = el("div","rules");
   DATA.nearRules.forEach(r=>{
     const d = el("details","card rule"); d.open = true;
@@ -1247,6 +1285,7 @@ function HM(m){
   });
   v.appendChild(g2);
 
+  if(DATA.transitions.length){
   v.appendChild(el("h2","sec","Transitions <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— technically Expression of Ideas, tested the same way</span>"));
   const tc = el("div","card");
   tc.innerHTML = '<div class="scroll"><table><thead><tr><th style="width:150px">Relationship</th><th>Words</th></tr></thead><tbody>'
@@ -1254,6 +1293,7 @@ function HM(m){
     + '</tbody></table></div>';
   v.appendChild(tc);
   v.appendChild(el("div","hint","<b>Method:</b> cover the transition word entirely. Read the sentence before and the sentence after. Decide the relationship <i>yourself</i>, then pick the word. The trap is a contrast word where the two sentences actually agree."));
+  }
 
   v.appendChild(el("h2","sec","Test-day timing"));
   const tm = el("div","tiles");
@@ -1275,7 +1315,7 @@ function HM(m){
 (function(){
   const v = $("#v-voc");
 
-  v.appendChild(el("h2","sec","Words in context <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— Craft and Structure is 28% of RW, currently "+bandNow("CAS")+"</span>"));
+  v.appendChild(el("h2","sec","Words in context <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— Craft and Structure"+(domW("CAS")!=null?" is "+domW("CAS")+"% of RW":"")+", currently "+bandNow("CAS")+"</span>"));
 
   const method = el("div","card"); method.style.cssText="padding:15px 18px;margin-bottom:14px";
   method.innerHTML = '<div class="lab" style="margin-bottom:8px">The method</div>'
@@ -1291,8 +1331,9 @@ function HM(m){
   search.placeholder = "Filter words…";
   v.appendChild(search);
 
-  v.appendChild(el("h2","sec","Secondary meanings <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— click to reveal. The SAT tests common words used precisely, not obscure ones.</span>"));
-  const sg = el("div","vgrid"); v.appendChild(sg);
+  const sh = el("h2","sec","Secondary meanings <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— click to reveal. The SAT tests common words used precisely, not obscure ones.</span>");
+  const sg = el("div","vgrid");
+  if(DATA.secondary.length){ v.appendChild(sh); v.appendChild(sg); }
 
   const mine = el("div"); v.appendChild(el("h2","sec","My words <span style=\"text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500\">— add a word when you did not know it, or knew it and the SAT used a second meaning</span>"));
   v.appendChild(mine);

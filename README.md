@@ -107,6 +107,7 @@ Each file in your study folder has one job, and the agent follows a fixed set of
 
 - **The error log is the source of truth.** Every missed question is logged with its domain, the rule it broke, the letter you picked, the correct letter, and why you missed it. Before helping you, the agent reads the log, because it shows what you actually get wrong rather than what you think you get wrong.
 - **The dashboard shows the data and never holds it.** All of your data goes in one `DATA` block at the top of `dashboard.html`. The agent edits that block and never touches the render code.
+- **Every dashboard looks like the sample.** The agent downloads [`dashboard.html`](dashboard.html) from this repo as a template and only swaps in your `DATA`, so it never has to design the page itself. If the download fails, it rebuilds the page from an exact design spec in the prompt.
 - **Sets are built from what you miss.** A set can re-test a weak rule on fresh questions instead of repeating ones you've already seen.
 - **The projected score is honest about its uncertainty.** The dashboard shows a projected total with a 95% interval. The projection is anchored on your last full practice test and moves only on evidence logged after it. [`docs/projection.md`](docs/projection.md) explains every number.
 
